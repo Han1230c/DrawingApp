@@ -1,3 +1,25 @@
 <resources>
+    <!-- Original app name -->
     <string name="app_name">DrawingApp</string>
+
+    <!-- NEW: Added strings for color buttons -->
+    <string name="color_black">Black</string>
+    <string name="color_red">Red</string>
+    <string name="color_blue">Blue</string>
+
+    <!-- NEW: Added strings for shape buttons -->
+    <string name="shape_round">Round</string>
+    <string name="shape_square">Square</string>
+    <string name="shape_star">Star</string>
+
+    <!-- NEW: Added string for clear button -->
+    <string name="clear">Clear</string>
+
+    <!-- NEW: Added strings for seekbars -->
+    <string name="stroke_width">Stroke Width</string>
+    <string name="transparency">Transparency</string>
+
+    <!-- NEW: Added some potential messages -->
+    <string name="drawing_saved">Drawing saved successfully!</string>
+    <string name="error_saving">Error saving drawing. Please try again.</string>
 </resources>

@@ -5,20 +5,128 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/light_gray"
     tools:context=".MainActivity">
+    <!-- NEW: Added background color -->
 
-    <!-- CHANGED: Replaced default TextView with custom DrawingView -->
-    <!-- This view takes up the entire screen space -->
     <com.example.drawingapp.DrawingView
         android:id="@+id/drawingView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/controlsLayout"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="MissingClass" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- REMOVED: Default TextView that displayed "Hello World!" -->
+    <LinearLayout
+        android:id="@+id/controlsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+        <!-- NEW: Added background color -->
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <!-- UPDATED: Changed text to use string resource and added color attributes -->
+            <Button
+                android:id="@+id/buttonBlack"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/color_black"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/black" />
+            <Button
+                android:id="@+id/buttonRed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/color_red"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/red" />
+            <Button
+                android:id="@+id/buttonBlue"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/color_blue"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/blue" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <!-- UPDATED: Changed text to use string resource and added color attributes -->
+            <Button
+                android:id="@+id/buttonRound"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/shape_round"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/button_color" />
+            <Button
+                android:id="@+id/buttonSquare"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/shape_square"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/button_color" />
+            <Button
+                android:id="@+id/buttonStar"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/shape_star"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/button_color" />
+        </LinearLayout>
+
+        <!-- NEW: Added TextView for stroke width description -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/stroke_width"
+            android:textColor="@color/text_color" />
+
+        <SeekBar
+            android:id="@+id/seekBarStrokeWidth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="50"
+            android:progress="8" />
+
+        <!-- NEW: Added TextView for transparency description -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/transparency"
+            android:textColor="@color/text_color" />
+
+        <SeekBar
+            android:id="@+id/seekBarAlpha"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="255"
+            android:progress="255" />
+
+        <!-- UPDATED: Changed text to use string resource and added color attributes -->
+        <Button
+            android:id="@+id/buttonClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/clear"
+            android:textColor="@color/white"
+            android:backgroundTint="@color/button_color" />
+
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

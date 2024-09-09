@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Original colors -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- NEW: Added colors for drawing -->
+    <color name="red">#FFFF0000</color>
+    <color name="blue">#FF0000FF</color>
+
+    <!-- NEW: Potential background color -->
+    <color name="light_gray">#FFF0F0F0</color>
+
+    <!-- NEW: Color for buttons -->
+    <color name="button_color">#FF3700B3</color>
+
+    <!-- NEW: Color for text -->
+    <color name="text_color">#FF121212</color>
 </resources>
