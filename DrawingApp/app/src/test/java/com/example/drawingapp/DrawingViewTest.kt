@@ -12,7 +12,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 
-@Config(manifest = Config.NONE)
+@Config(manifest=Config.NONE, sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class DrawingViewTest {
 

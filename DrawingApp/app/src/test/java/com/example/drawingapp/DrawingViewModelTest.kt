@@ -15,7 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.junit.runner.RunWith
 
-@Config(manifest = Config.NONE)
+@Config(manifest=Config.NONE, sdk = [28])
 @RunWith(RobolectricTestRunner::class)
 class DrawingViewModelTest {
 

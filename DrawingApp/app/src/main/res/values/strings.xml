@@ -22,4 +22,6 @@
     <!-- NEW: Added some potential messages -->
     <string name="drawing_saved">Drawing saved successfully!</string>
     <string name="error_saving">Error saving drawing. Please try again.</string>
+    <!-- NEW: Added string for HomeFragment button -->
+    <string name="start_drawing">Start Drawing</string>
 </resources>
