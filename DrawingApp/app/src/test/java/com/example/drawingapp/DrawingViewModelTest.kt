@@ -135,5 +135,45 @@ class DrawingViewModelTest {
         verify(drawingDao, times(1)).getAllDrawings()
     }
 
+    @Test
+    fun loadDrawingById_notFound() = runTest {
+        // Given
+        val drawingId = 1
+        whenever(drawingDao.getDrawingById(drawingId)).thenReturn(null)
 
+        // When
+        viewModel.loadDrawingById(drawingId)
+
+        // Then
+        advanceUntilIdle()
+        verify(loadedPathsObserver, never()).onChanged(any())
+    }
+
+    @Test
+    fun saveDrawing_emptyName() = runTest {
+        // Given
+        val drawingName = ""
+        val paths = listOf<DrawingView.PathData>()
+
+        // When
+        viewModel.saveDrawing(drawingName, paths)
+
+        // Then
+        advanceUntilIdle()
+        verify(drawingDao, never()).insertDrawing(any())
+        verify(drawingDao, never()).getAllDrawings()
+    }
+
+    @Test
+    fun loadAllDrawings_empty() = runTest {
+        // Given
+        whenever(drawingDao.getAllDrawings()).thenReturn(emptyList())
+
+        // When
+        viewModel.loadAllDrawings()
+
+        // Then
+        advanceUntilIdle()
+        verify(allDrawingsObserver).onChanged(emptyList())
+    }
 }

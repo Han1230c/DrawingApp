@@ -21,6 +21,9 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
     val loadedPaths: LiveData<List<DrawingView.PathData>> = _loadedPaths
 
     fun saveDrawing(name: String, paths: List<DrawingView.PathData>) {
+        if (name.isBlank()) {
+            return
+        }
         viewModelScope.launch {
             try {
                 val serializablePaths = paths.map { pathData ->

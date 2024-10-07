@@ -35,6 +35,8 @@ class DrawingView @JvmOverloads constructor(
     private var startX = 0f
     private var startY = 0f
 
+    fun getCurrentPaint(): Paint = Paint(currentPaint)
+
     fun setPaintColor(color: Int) {
         currentPaint.color = color
     }
