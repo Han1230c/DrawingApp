@@ -85,9 +85,11 @@ class DrawingView @JvmOverloads constructor(
                 startX = x
                 startY = y
                 when (currentShape) {
-                    PenShape.STAR -> drawStar(x, y)
+                    PenShape.STAR -> {
+                        // Do nothing yet, wait until ACTION_UP to draw star
+                    }
                     PenShape.SQUARE -> {
-                        // No action needed at this point for SQUARE
+                        // Do nothing yet for square
                     }
                     else -> currentPath.moveTo(x, y)
                 }
@@ -108,6 +110,9 @@ class DrawingView @JvmOverloads constructor(
 
             MotionEvent.ACTION_UP -> {
                 when (currentShape) {
+                    PenShape.STAR -> {
+                        drawStar(startX, startY) // Draw star only at ACTION_UP
+                    }
                     PenShape.SQUARE -> {
                         val left = minOf(startX, event.x)
                         val top = minOf(startY, event.y)
@@ -118,31 +123,38 @@ class DrawingView @JvmOverloads constructor(
                     }
                     else -> currentPath.lineTo(event.x, event.y)
                 }
+                // Add the path to paths list after completing the shape
                 paths.add(PathData(Path(currentPath), Paint(currentPaint), currentShape))
                 currentPath.reset()
             }
         }
 
-        invalidate()
+        invalidate() // Refresh the view to show the updated path
         return true
     }
 
     private fun drawStar(x: Float, y: Float) {
         val outerRadius = currentPaint.strokeWidth * 5f
         val innerRadius = outerRadius / 2.5f
-        val path = Path()
+        val angleOffset = Math.PI / 10 // 18 degrees offset for a 5-point star
+
+        currentPath.reset() // Start with a fresh path
 
         for (i in 0 until 10) {
-            val angle = (i * 36.0) * Math.PI / 180.0
+            val angle = angleOffset + (i * Math.PI / 5)
             val radius = if (i % 2 == 0) outerRadius else innerRadius
-            val pointX = x + (radius * sin(angle)).toFloat()
-            val pointY = y - (radius * cos(angle)).toFloat()
-            if (i == 0) path.moveTo(pointX, pointY) else path.lineTo(pointX, pointY)
+            val pointX = (x + radius * cos(angle)).toFloat()
+            val pointY = (y - radius * sin(angle)).toFloat()
+            if (i == 0) {
+                currentPath.moveTo(pointX, pointY)
+            } else {
+                currentPath.lineTo(pointX, pointY)
+            }
         }
-
-        path.close()
-        currentPath.addPath(path)
+        currentPath.close() 
     }
+
+
 
     fun clearCanvas() {
         paths.clear()
