@@ -3,13 +3,12 @@ package com.example.drawingapp
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PathMeasure
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -22,7 +21,7 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
     val loadedPaths: LiveData<List<DrawingView.PathData>> = _loadedPaths
 
     fun saveDrawing(name: String, paths: List<DrawingView.PathData>) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val serializablePaths = paths.map { pathData ->
                     SerializablePath(
@@ -39,13 +38,12 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
                 val drawing = Drawing(
                     name = name,
                     serializedPaths = serializedPaths,
-                    thumbnail = "" // Placeholder for thumbnail, if needed
+                    thumbnail = ""
                 )
                 drawingDao.insertDrawing(drawing)
 
                 loadAllDrawings()
             } catch (e: Exception) {
-                // Error handling
             }
         }
     }
@@ -69,23 +67,19 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
     }
 
     fun loadAllDrawings() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val drawings = drawingDao.getAllDrawings()
-            withContext(Dispatchers.Main) {
-                _allDrawings.value = drawings
-            }
+            _allDrawings.value = drawings
         }
     }
 
     fun loadDrawingById(id: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
                 val drawing = drawingDao.getDrawingById(id)
                 if (drawing != null) {
                     val paths = convertDrawingToPaths(drawing)
-                    withContext(Dispatchers.Main) {
-                        _loadedPaths.value = paths
-                    }
+                    _loadedPaths.value = paths
                 }
             } catch (e: Exception) {
                 // Error handling
@@ -120,7 +114,7 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
     }
 
     fun deleteDrawing(drawing: Drawing) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             drawingDao.deleteDrawing(drawing)
             loadAllDrawings()
         }

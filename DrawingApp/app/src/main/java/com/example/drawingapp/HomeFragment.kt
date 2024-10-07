@@ -87,9 +87,8 @@ fun HomeScreen(
 ) {
     var showSplash by remember { mutableStateOf(true) }
 
-    // 使用 LaunchedEffect 在启动时延迟2秒，然后将 showSplash 设为 false
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(2000) // 延迟2秒
+        kotlinx.coroutines.delay(2000)
         showSplash = false
     }
 
