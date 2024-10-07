@@ -1,159 +1,106 @@
-package com.example.drawingapp
-
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Path
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import com.example.drawingapp.Drawing
+import com.example.drawingapp.DrawingDao
+import com.example.drawingapp.DrawingViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.resetMain
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.ArgumentCaptor
+import org.mockito.Captor
 import org.mockito.Mock
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
-import kotlin.test.assertEquals
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-import org.junit.runner.RunWith
+import io.mockk.mockkStatic
+import io.mockk.every
+import android.util.Log
+import com.example.drawingapp.MainDispatcherRule
 
-@Config(manifest=Config.NONE, sdk = [28])
-@RunWith(RobolectricTestRunner::class)
+@ExperimentalCoroutinesApi
 class DrawingViewModelTest {
 
+    // 使用 MainDispatcherRule 确保测试中替换了 Dispatchers.Main
     @get:Rule
-    var instantTaskExecutorRule = InstantTaskExecutorRule()
+    val mainDispatcherRule = MainDispatcherRule()
+
+    // 使用 InstantTaskExecutorRule 使得 LiveData 能够同步更新
+    @get:Rule
+    val instantExecutorRule = InstantTaskExecutorRule()
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    @Mock
+    private lateinit var drawingDao: DrawingDao
+
+    @Mock
+    private lateinit var observer: Observer<List<Drawing>>
+
+    @Captor
+    private lateinit var drawingCaptor: ArgumentCaptor<Drawing>
 
     private lateinit var viewModel: DrawingViewModel
 
-    @Mock
-    private lateinit var observer: Observer<MutableList<Pair<Path, Paint>>>
-
-    /**
-     * Setup method to initialize Mockito and the ViewModel before each test.
-     */
     @Before
     fun setup() {
+        // 模拟 Android 的 Log 类，避免未模拟方法异常
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+
+        // 初始化 Mockito 和 ViewModel
         MockitoAnnotations.openMocks(this)
-        viewModel = DrawingViewModel()
+        Dispatchers.setMain(testDispatcher)
+        viewModel = DrawingViewModel(drawingDao)
+
+        // 观察 LiveData
+        viewModel.allDrawings.observeForever(observer)
     }
 
-    /**
-     * Test to verify the default values in the ViewModel.
-     * The default color should be black, shape should be ROUND, alpha should be 255 (fully opaque),
-     * and the default stroke width should be 8f.
-     */
-    @Test
-    fun testDefaultValues() {
-        assertEquals(Color.BLACK, viewModel.currentPaint.value?.color)
-        assertEquals(PenShape.ROUND, viewModel.currentShape.value)
-        assertEquals(255, viewModel.currentAlpha.value)
-        assertEquals(8f, viewModel.currentPaint.value?.strokeWidth)
+    @After
+    fun tearDown() {
+        // 清除调度器
+        Dispatchers.resetMain()
     }
 
-    /**
-     * Test to verify that the color can be set to different values.
-     * This test sets the color to RED and BLUE, and checks if the color is updated correctly.
-     */
     @Test
-    fun testSetColor() {
-        viewModel.setColor(Color.RED)
-        assertEquals(Color.RED, viewModel.currentPaint.value?.color)
+    fun `loadAllDrawings should update allDrawings LiveData`() = testScope.runTest {
+        // 准备模拟的数据
+        val drawings = listOf(Drawing(1, "Test Drawing", "[]", ""))
+        `when`(drawingDao.getAllDrawings()).thenReturn(drawings)
 
-        viewModel.setColor(Color.BLUE)
-        assertEquals(Color.BLUE, viewModel.currentPaint.value?.color)
+        // 执行 ViewModel 中的方法
+        viewModel.loadAllDrawings()
+        advanceUntilIdle() // 确保协程完成所有操作
+
+        // 验证观察者是否接收到正确的数据
+        verify(observer).onChanged(drawings)
     }
 
-    /**
-     * Test to verify that the stroke width can be set to different values.
-     * This test sets the stroke width to 10f and 25f, and checks if the stroke width is updated correctly.
-     */
     @Test
-    fun testSetStrokeWidth() {
-        viewModel.setStrokeWidth(10f)
-        assertEquals(10f, viewModel.currentPaint.value?.strokeWidth)
+    fun `saveDrawing should insert drawing into database`() = testScope.runTest {
+        // 准备插入的数据
+        val drawing = Drawing(0, "New Drawing", "[]", "")
 
-        viewModel.setStrokeWidth(25f)
-        assertEquals(25f, viewModel.currentPaint.value?.strokeWidth)
-    }
+        // 调用 ViewModel 的保存方法
+        viewModel.saveDrawing(drawing.name, emptyList())
+        advanceUntilIdle() // 确保协程完成所有操作
 
-    /**
-     * Test to verify that the alpha (opacity) value can be set.
-     * This test sets the alpha to 128 (50% opacity) and 255 (100% opacity), and checks if it is updated correctly.
-     */
-    @Test
-    fun testSetAlpha() {
-        viewModel.setAlpha(128)
-        assertEquals(128, viewModel.currentAlpha.value)
-        assertEquals(128, viewModel.currentPaint.value?.alpha)
+        // 验证 DAO 的 insertDrawing 方法是否被调用
+        verify(drawingDao).insertDrawing(drawingCaptor.capture())
 
-        viewModel.setAlpha(255)
-        assertEquals(255, viewModel.currentAlpha.value)
-        assertEquals(255, viewModel.currentPaint.value?.alpha)
-    }
-
-    /**
-     * Test to verify that the shape can be set to different values.
-     * This test sets the shape to SQUARE and STAR, and checks if the shape is updated correctly.
-     */
-    @Test
-    fun testSetShape() {
-        viewModel.setShape(PenShape.SQUARE)
-        assertEquals(PenShape.SQUARE, viewModel.currentShape.value)
-
-        viewModel.setShape(PenShape.STAR)
-        assertEquals(PenShape.STAR, viewModel.currentShape.value)
-    }
-
-    /**
-     * Test to verify that a new path can be added to the ViewModel.
-     * This test adds a path and checks if it is correctly added to the list of paths.
-     */
-    @Test
-    fun testAddPath() {
-        val path = Path()
-        viewModel.addPath(path)
-
-        assertEquals(1, viewModel.paths.value?.size)
-        assertEquals(path, viewModel.paths.value?.get(0)?.first)
-    }
-
-    /**
-     * Test to verify that all paths can be cleared from the ViewModel.
-     * This test adds a path, clears all paths, and checks if the paths are removed.
-     */
-    @Test
-    fun testClearPaths() {
-        val path = Path()
-        viewModel.addPath(path)
-        assertEquals(1, viewModel.paths.value?.size)
-
-        viewModel.clearPaths()
-        assertEquals(0, viewModel.paths.value?.size)
-    }
-
-    /**
-     * Test to verify the boundary conditions for stroke width.
-     * This test sets the stroke width to 0f and 100f, and checks if the ViewModel handles it correctly.
-     */
-    @Test
-    fun testStrokeWidthBoundary() {
-        viewModel.setStrokeWidth(0f)
-        assertEquals(0f, viewModel.currentPaint.value?.strokeWidth)
-
-        viewModel.setStrokeWidth(100f)
-        assertEquals(100f, viewModel.currentPaint.value?.strokeWidth)
-    }
-
-    /**
-     * Test to verify the boundary conditions for alpha (opacity).
-     * This test sets the alpha to 0 (completely transparent) and 255 (completely opaque),
-     * and checks if the ViewModel handles it correctly.
-     */
-    @Test
-    fun testAlphaBoundary() {
-        viewModel.setAlpha(0)
-        assertEquals(0, viewModel.currentAlpha.value)
-
-        viewModel.setAlpha(255)
-        assertEquals(255, viewModel.currentAlpha.value)
+        // 验证捕获到的插入数据是否与预期一致
+        val capturedDrawing = drawingCaptor.value
+        assert(capturedDrawing.name == "New Drawing")
     }
 }

@@ -14,6 +14,7 @@
 
     <!-- NEW: Added string for clear button -->
     <string name="clear">Clear</string>
+    <string name="save">Save</string>
 
     <!-- NEW: Added strings for seekbars -->
     <string name="stroke_width">Stroke Width</string>

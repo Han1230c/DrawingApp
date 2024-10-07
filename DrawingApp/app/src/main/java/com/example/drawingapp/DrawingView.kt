@@ -1,157 +1,161 @@
 package com.example.drawingapp
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Path
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.cos
 import kotlin.math.sin
 
-/**
- * Custom view class that handles drawing interactions.
- * It allows users to draw different shapes (round, square, star) on the canvas,
- * and updates the canvas according to touch events.
- */
+enum class PenShape { ROUND, SQUARE, STAR }
+
 class DrawingView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
+    context: Context, attrs: AttributeSet? = null
+) : View(context, attrs) {
 
-    // List of drawn paths and their associated paints
-    private var paths = mutableListOf<Pair<Path, Paint>>()
+    data class PathData(
+        val path: Path,
+        val paint: Paint,
+        val shape: PenShape
+    )
 
-    // The current path being drawn by the user
+    private val paths = mutableListOf<PathData>()
     private var currentPath = Path()
-
-    // The paint configuration for the current path being drawn
-    private var currentPaint = Paint()
-
-    // The current shape to be drawn (round, square, star)
+    private var currentPaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.STROKE
+        strokeWidth = 8f
+        isAntiAlias = true
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
     private var currentShape = PenShape.ROUND
 
-    // ViewModel that stores the drawing state and interacts with the view
-    private lateinit var viewModel: DrawingViewModel
+    private var startX = 0f
+    private var startY = 0f
 
-    /**
-     * Method to set the ViewModel that the view will observe for changes.
-     * This connects the ViewModel with the view to update the drawing state.
-     */
-    fun setViewModel(vm: DrawingViewModel) {
-        viewModel = vm
-
-        // Observe changes to the paths stored in the ViewModel
-        viewModel.paths.observeForever { newPaths ->
-            paths = newPaths
-            invalidate() // Redraw the view when paths are updated
-        }
-
-        // Observe changes to the current paint style
-        viewModel.currentPaint.observeForever { newPaint ->
-            currentPaint = newPaint
-        }
-
-        // Observe changes to the current shape selected for drawing
-        viewModel.currentShape.observeForever { newShape ->
-            currentShape = newShape
-        }
+    fun setPaintColor(color: Int) {
+        currentPaint.color = color
     }
 
-    /**
-     * Overrides the onDraw method to draw paths on the canvas.
-     * It loops through the list of paths and paints them on the canvas.
-     */
+    fun setStrokeWidth(width: Float) {
+        currentPaint.strokeWidth = width
+    }
+
+    fun setAlpha(alpha: Int) {
+        currentPaint.alpha = alpha
+    }
+
+    fun setShape(shape: PenShape) {
+        currentShape = shape
+    }
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-
-        // Draw all previously drawn paths with their respective paints
-        paths.forEach { (path, paint) ->
-            canvas.drawPath(path, paint)
+        for (pathData in paths) {
+            when (pathData.shape) {
+                PenShape.SQUARE -> {
+                    val bounds = RectF()
+                    pathData.path.computeBounds(bounds, true)
+                    drawSquare(canvas, bounds, pathData.paint)
+                }
+                PenShape.STAR -> drawStar(canvas, pathData.path, pathData.paint)
+                else -> canvas.drawPath(pathData.path, pathData.paint)
+            }
         }
-
-        // Draw the current path as the user is actively drawing it
         canvas.drawPath(currentPath, currentPaint)
     }
 
-    /**
-     * Handles touch events to create paths based on user finger movements.
-     * Depending on the selected shape, different paths (round, square, star) are drawn.
-     */
+    private fun drawSquare(canvas: Canvas, bounds: RectF, paint: Paint) {
+        canvas.drawRect(bounds, paint)
+    }
+
+    private fun drawStar(canvas: Canvas, path: Path, paint: Paint) {
+        canvas.drawPath(path, paint)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        // Capture the x and y coordinates of the touch event
         val x = event.x
         val y = event.y
 
-        // Handle different touch events (ACTION_DOWN, ACTION_MOVE, ACTION_UP)
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // Start a new path when the user touches the screen
                 currentPath = Path()
-
-                // Move to the initial touch point depending on the selected shape
+                startX = x
+                startY = y
                 when (currentShape) {
-                    PenShape.ROUND, PenShape.SQUARE -> currentPath.moveTo(x, y)
-                    PenShape.STAR -> drawStar(x, y) // Start drawing a star if the selected shape is STAR
+                    PenShape.STAR -> drawStar(x, y)
+                    PenShape.SQUARE -> {
+                        // No action needed at this point for SQUARE
+                    }
+                    else -> currentPath.moveTo(x, y)
                 }
             }
             MotionEvent.ACTION_MOVE -> {
-                // Continue drawing the path as the user moves their finger
                 when (currentShape) {
-                    PenShape.ROUND, PenShape.SQUARE -> currentPath.lineTo(x, y)
-                    PenShape.STAR -> drawStar(x, y) // For a star, update its shape as the user moves
+                    PenShape.SQUARE -> {
+                        currentPath.reset()
+                        val left = minOf(startX, event.x)
+                        val top = minOf(startY, event.y)
+                        val right = maxOf(startX, event.x)
+                        val bottom = maxOf(startY, event.y)
+                        currentPath.addRect(left, top, right, bottom, Path.Direction.CW)
+                    }
+                    else -> currentPath.lineTo(event.x, event.y)
                 }
             }
+
             MotionEvent.ACTION_UP -> {
-                // Finalize the path once the user lifts their finger
                 when (currentShape) {
-                    PenShape.ROUND, PenShape.SQUARE -> currentPath.lineTo(x, y)
-                    PenShape.STAR -> drawStar(x, y)
+                    PenShape.SQUARE -> {
+                        val left = minOf(startX, event.x)
+                        val top = minOf(startY, event.y)
+                        val right = maxOf(startX, event.x)
+                        val bottom = maxOf(startY, event.y)
+                        currentPath.reset()
+                        currentPath.addRect(left, top, right, bottom, Path.Direction.CW)
+                    }
+                    else -> currentPath.lineTo(event.x, event.y)
                 }
-
-                // Add the completed path to the ViewModel
-                viewModel.addPath(currentPath)
-
-                // Reset the current path for future drawing actions
-                currentPath = Path()
+                paths.add(PathData(Path(currentPath), Paint(currentPaint), currentShape))
+                currentPath.reset()
             }
-            else -> return false
         }
 
-        // Invalidate the view to trigger a redraw after touch events
         invalidate()
         return true
     }
 
-    /**
-     * Method to draw a star shape based on the user's touch coordinates (x, y).
-     * It calculates the points of a star using trigonometric functions and adds it to the path.
-     */
     private fun drawStar(x: Float, y: Float) {
-        // Define the outer and inner radius of the star based on the current stroke width
-        val outerRadius = currentPaint.strokeWidth
-        val innerRadius = outerRadius / 2
-
-        // Create a new path for the star
+        val outerRadius = currentPaint.strokeWidth * 5f
+        val innerRadius = outerRadius / 2.5f
         val path = Path()
 
-        // Loop to calculate the 10 points of the star (5 outer and 5 inner)
         for (i in 0 until 10) {
-            val angle = Math.PI * i / 5 // Divide the full circle (360 degrees) into 10 segments
-            val radius = if (i % 2 == 0) outerRadius else innerRadius // Alternate between outer and inner points
-
-            // Calculate the X and Y coordinates for each star point
+            val angle = (i * 36.0) * Math.PI / 180.0
+            val radius = if (i % 2 == 0) outerRadius else innerRadius
             val pointX = x + (radius * sin(angle)).toFloat()
             val pointY = y - (radius * cos(angle)).toFloat()
-
-            // Move to the first point or draw a line to the next point
             if (i == 0) path.moveTo(pointX, pointY) else path.lineTo(pointX, pointY)
         }
 
-        // Close the path to complete the star shape
         path.close()
-
-        // Add the star path to the current path being drawn
         currentPath.addPath(path)
+    }
+
+    fun clearCanvas() {
+        paths.clear()
+        invalidate()
+    }
+
+    fun getPaths(): List<PathData> {
+        return paths
+    }
+
+    fun loadPaths(loadedPaths: List<PathData>) {
+        paths.clear()
+        paths.addAll(loadedPaths)
+        invalidate()
     }
 }

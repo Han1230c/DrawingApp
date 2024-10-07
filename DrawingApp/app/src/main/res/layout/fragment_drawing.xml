@@ -35,19 +35,25 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/color_black" />
+                android:text="@string/color_black"
+                android:backgroundTint="@color/black" />
+
             <Button
                 android:id="@+id/buttonRed"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/color_red" />
+                android:text="@string/color_red"
+                android:backgroundTint="@color/red" />
+
             <Button
                 android:id="@+id/buttonBlue"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/color_blue" />
+                android:text="@string/color_blue"
+                android:backgroundTint="@color/blue" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -103,6 +109,19 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/clear" />
+
+        <Button
+            android:id="@+id/buttonSave"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/save" />
+
+        <!-- Add the Back button  -->
+        <Button
+            android:id="@+id/buttonBack"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Back" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,105 +1,127 @@
 package com.example.drawingapp
 
+import android.app.AlertDialog
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.util.Log
+import android.view.*
 import android.widget.Button
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
-import android.graphics.Color
+import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 
-/**
- * DrawingFragment contains the main drawing functionality of the app.
- * It manages the DrawingView and provides UI controls for drawing operations.
- */
 class DrawingFragment : Fragment() {
-    // Shared ViewModel to manage drawing state
-    private val viewModel: DrawingViewModel by activityViewModels()
 
-    // Custom view for drawing
+    private val viewModel: DrawingViewModel by viewModels {
+        DrawingViewModelFactory(AppDatabase.getDatabase(requireContext()).drawingDao())
+    }
+
     private lateinit var drawingView: DrawingView
 
-    /**
-     * Called to create the view hierarchy associated with the fragment.
-     * This method inflates the layout for the DrawingFragment.
-     */
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         return inflater.inflate(R.layout.fragment_drawing, container, false)
     }
 
-    /**
-     * Called immediately after onCreateView() has returned, but before any saved state has been restored in to the view.
-     * This method sets up the DrawingView and initializes all UI controls.
-     */
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Initialize DrawingView and connect it to the ViewModel
         drawingView = view.findViewById(R.id.drawingView)
-        drawingView.setViewModel(viewModel)
 
-        // Set up all UI controls
-        setupColorButtons(view)
-        setupStrokeWidthSeekBar(view)
-        setupShapeButtons(view)
-        setupAlphaSeekBar(view)
-        setupClearButton(view)
-    }
+        val drawingId = arguments?.getInt("drawingId", -1) ?: -1
+        if (drawingId != -1) {
+            viewModel.loadDrawingById(drawingId)
+        }
 
-    /**
-     * Sets up the color selection buttons.
-     */
-    private fun setupColorButtons(view: View) {
-        view.findViewById<Button>(R.id.buttonBlack).setOnClickListener { viewModel.setColor(Color.BLACK) }
-        view.findViewById<Button>(R.id.buttonRed).setOnClickListener { viewModel.setColor(Color.RED) }
-        view.findViewById<Button>(R.id.buttonBlue).setOnClickListener { viewModel.setColor(Color.BLUE) }
-    }
+        viewModel.loadedPaths.observe(viewLifecycleOwner) { paths ->
+            paths?.let { drawingView.loadPaths(it) }
+        }
 
-    /**
-     * Sets up the SeekBar to adjust the stroke width.
-     */
-    private fun setupStrokeWidthSeekBar(view: View) {
-        view.findViewById<SeekBar>(R.id.seekBarStrokeWidth).setOnSeekBarChangeListener(
-            object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    viewModel.setStrokeWidth(progress.toFloat())
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        // Color buttons
+        view.findViewById<Button>(R.id.buttonBlack).setOnClickListener {
+            drawingView.setPaintColor(android.graphics.Color.BLACK)
+        }
+        view.findViewById<Button>(R.id.buttonRed).setOnClickListener {
+            drawingView.setPaintColor(android.graphics.Color.RED)
+        }
+        view.findViewById<Button>(R.id.buttonBlue).setOnClickListener {
+            drawingView.setPaintColor(android.graphics.Color.BLUE)
+        }
+
+        // Shape buttons
+        view.findViewById<Button>(R.id.buttonRound).setOnClickListener {
+            drawingView.setShape(PenShape.ROUND)
+        }
+        view.findViewById<Button>(R.id.buttonSquare).setOnClickListener {
+            drawingView.setShape(PenShape.SQUARE)
+        }
+        view.findViewById<Button>(R.id.buttonStar).setOnClickListener {
+            drawingView.setShape(PenShape.STAR)
+        }
+
+        // Stroke width
+        val seekBarStrokeWidth = view.findViewById<SeekBar>(R.id.seekBarStrokeWidth)
+        seekBarStrokeWidth.progress = 8
+        seekBarStrokeWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                drawingView.setStrokeWidth(progress.toFloat())
             }
-        )
-    }
 
-    /**
-     * Sets up the shape selection buttons.
-     */
-    private fun setupShapeButtons(view: View) {
-        view.findViewById<Button>(R.id.buttonRound).setOnClickListener { viewModel.setShape(PenShape.ROUND) }
-        view.findViewById<Button>(R.id.buttonSquare).setOnClickListener { viewModel.setShape(PenShape.SQUARE) }
-        view.findViewById<Button>(R.id.buttonStar).setOnClickListener { viewModel.setShape(PenShape.STAR) }
-    }
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
 
-    /**
-     * Sets up the SeekBar to adjust the alpha (opacity) of the drawing.
-     */
-    private fun setupAlphaSeekBar(view: View) {
-        view.findViewById<SeekBar>(R.id.seekBarAlpha).setOnSeekBarChangeListener(
-            object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    viewModel.setAlpha(progress)
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        // Opacity
+        val seekBarAlpha = view.findViewById<SeekBar>(R.id.seekBarAlpha)
+        seekBarAlpha.progress = 255
+        seekBarAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                drawingView.setAlpha(progress)
             }
-        )
+
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
+
+        // Clear button
+        view.findViewById<Button>(R.id.buttonClear).setOnClickListener {
+            drawingView.clearCanvas()
+        }
+
+        // Save button
+        view.findViewById<Button>(R.id.buttonSave).setOnClickListener {
+            showSaveDialog()
+        }
+
+        // Back button
+        view.findViewById<Button>(R.id.buttonBack).setOnClickListener {
+            findNavController().navigate(R.id.action_drawingFragment_to_homeFragment)
+        }
     }
 
-    /**
-     * Sets up the clear button to reset the canvas.
-     */
-    private fun setupClearButton(view: View) {
-        view.findViewById<Button>(R.id.buttonClear).setOnClickListener { viewModel.clearPaths() }
+    private fun showSaveDialog() {
+        val builder = AlertDialog.Builder(requireContext())
+        builder.setTitle("Save Drawing")
+        val input = android.widget.EditText(requireContext())
+        builder.setView(input)
+        builder.setPositiveButton("Save") { dialog, _ ->
+            val drawingName = input.text.toString()
+            if (drawingName.isNotEmpty()) {
+                val paths = drawingView.getPaths()
+                viewModel.saveDrawing(drawingName, paths)
+                Toast.makeText(requireContext(), "Drawing saved", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Please enter a name", Toast.LENGTH_SHORT).show()
+            }
+            dialog.dismiss()
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.cancel()
+        }
+        builder.show()
     }
 }
