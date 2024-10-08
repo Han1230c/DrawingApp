@@ -1,4 +1,4 @@
-package com.example.drawingapp
+package com.example.drawingapp.ui
 
 import android.app.AlertDialog
 import android.os.Bundle
@@ -10,11 +10,19 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import com.example.drawingapp.DrawingView
+import com.example.drawingapp.PenShape
+import com.example.drawingapp.R
+import com.example.drawingapp.data.AppDatabase
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.viewmodel.DrawingViewModel
+import com.example.drawingapp.viewmodel.DrawingViewModelFactory
 
 class DrawingFragment : Fragment() {
 
     private val viewModel: DrawingViewModel by viewModels {
-        DrawingViewModelFactory(AppDatabase.getDatabase(requireContext()).drawingDao())
+        val repository = DrawingRepository(AppDatabase.getDatabase(requireContext()).drawingDao())
+        DrawingViewModelFactory(repository)
     }
 
     private lateinit var drawingView: DrawingView

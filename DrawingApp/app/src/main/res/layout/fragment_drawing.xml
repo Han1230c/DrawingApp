@@ -2,7 +2,6 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/light_gray">
@@ -26,6 +25,7 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent">
 
+        <!-- Color Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,9 +53,9 @@
                 android:layout_weight="1"
                 android:text="@string/color_blue"
                 android:backgroundTint="@color/blue" />
-
         </LinearLayout>
 
+        <!-- Shape Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -80,6 +80,7 @@
                 android:text="@string/shape_star" />
         </LinearLayout>
 
+        <!-- Stroke Width -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -92,6 +93,7 @@
             android:max="50"
             android:progress="8" />
 
+        <!-- Opacity -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -104,6 +106,7 @@
             android:max="255"
             android:progress="255" />
 
+        <!-- Action Buttons -->
         <Button
             android:id="@+id/buttonClear"
             android:layout_width="match_parent"
@@ -116,12 +119,11 @@
             android:layout_height="wrap_content"
             android:text="@string/save" />
 
-        <!-- Add the Back button  -->
+        <!-- Back Button -->
         <Button
             android:id="@+id/buttonBack"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Back" />
-
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

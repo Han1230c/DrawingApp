@@ -6,6 +6,8 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
 import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.max
 import kotlin.math.sin
 
 enum class PenShape { ROUND, SQUARE, STAR }
@@ -102,10 +104,10 @@ class DrawingView @JvmOverloads constructor(
                 when (currentShape) {
                     PenShape.SQUARE -> {
                         currentPath.reset()
-                        val left = minOf(startX, event.x)
-                        val top = minOf(startY, event.y)
-                        val right = maxOf(startX, event.x)
-                        val bottom = maxOf(startY, event.y)
+                        val left = min(startX, event.x)
+                        val top = min(startY, event.y)
+                        val right = max(startX, event.x)
+                        val bottom = max(startY, event.y)
                         currentPath.addRect(left, top, right, bottom, Path.Direction.CW)
                     }
                     else -> currentPath.lineTo(event.x, event.y)
@@ -118,10 +120,10 @@ class DrawingView @JvmOverloads constructor(
                         drawStar(startX, startY) // Draw star only at ACTION_UP
                     }
                     PenShape.SQUARE -> {
-                        val left = minOf(startX, event.x)
-                        val top = minOf(startY, event.y)
-                        val right = maxOf(startX, event.x)
-                        val bottom = maxOf(startY, event.y)
+                        val left = min(startX, event.x)
+                        val top = min(startY, event.y)
+                        val right = max(startX, event.x)
+                        val bottom = max(startY, event.y)
                         currentPath.reset()
                         currentPath.addRect(left, top, right, bottom, Path.Direction.CW)
                     }
@@ -155,10 +157,8 @@ class DrawingView @JvmOverloads constructor(
                 currentPath.lineTo(pointX, pointY)
             }
         }
-        currentPath.close() 
+        currentPath.close()
     }
-
-
 
     fun clearCanvas() {
         paths.clear()

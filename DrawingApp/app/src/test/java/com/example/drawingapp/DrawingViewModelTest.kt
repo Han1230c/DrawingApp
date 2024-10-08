@@ -4,6 +4,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.lifecycle.Observer
+import com.example.drawingapp.data.Drawing
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.viewmodel.DrawingViewModel
 import junit.framework.TestCase.assertNotNull
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.Dispatchers
@@ -16,10 +19,7 @@ import org.junit.Test
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 import org.junit.runner.RunWith
-import org.mockito.Mock
-import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
-
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -44,21 +44,17 @@ class DrawingViewModelTest {
         }
     }
 
-    @Mock
-    private lateinit var drawingDao: DrawingDao
-
-    @Mock
+    private lateinit var repository: DrawingRepository
     private lateinit var allDrawingsObserver: Observer<List<Drawing>>
-
-    @Mock
     private lateinit var loadedPathsObserver: Observer<List<DrawingView.PathData>>
-
     private lateinit var viewModel: DrawingViewModel
 
     @Before
     fun setup() {
-        MockitoAnnotations.openMocks(this)
-        viewModel = DrawingViewModel(drawingDao)
+        repository = mock()
+        allDrawingsObserver = mock()
+        loadedPathsObserver = mock()
+        viewModel = DrawingViewModel(repository)
         viewModel.allDrawings.observeForever(allDrawingsObserver)
         viewModel.loadedPaths.observeForever(loadedPathsObserver)
     }
@@ -71,32 +67,53 @@ class DrawingViewModelTest {
 
     @Test
     fun loadAllDrawings_success() = runTest {
-        // Test loading all drawings from the database successfully
         val drawings = listOf(Drawing(1, "Test Drawing", "", ""))
-        whenever(drawingDao.getAllDrawings()).thenReturn(drawings)
+        whenever(repository.getAllDrawings()).thenReturn(drawings)
 
         viewModel.loadAllDrawings()
 
         advanceUntilIdle()
-        verify(allDrawingsObserver).onChanged(drawings)  // Verify observer gets the correct data
+        verify(repository, times(1)).getAllDrawings()
+        verify(allDrawingsObserver).onChanged(drawings)
     }
 
     @Test
     fun saveDrawing_success() = runTest {
-        // Test saving a new drawing
         val drawingName = "New Drawing"
         val paths = listOf(DrawingView.PathData(Path(), Paint(), PenShape.ROUND))
 
         viewModel.saveDrawing(drawingName, paths)
 
         advanceUntilIdle()
-        verify(drawingDao, times(1)).insertDrawing(any())  // Ensure the drawing is inserted
-        verify(drawingDao, times(1)).getAllDrawings()  // Ensure getAllDrawings() is called
+        verify(repository, times(1)).insertDrawing(any())
+        verify(repository, times(1)).getAllDrawings()
+    }
+
+    @Test
+    fun deleteDrawing_success() = runTest {
+        val drawing = Drawing(1, "Test Drawing", "", "")
+
+        viewModel.deleteDrawing(drawing)
+
+        advanceUntilIdle()
+        verify(repository, times(1)).deleteDrawing(drawing)
+        verify(repository, times(1)).getAllDrawings()
+    }
+
+    @Test
+    fun saveDrawing_emptyName() = runTest {
+        val drawingName = ""
+        val paths = listOf<DrawingView.PathData>()
+
+        viewModel.saveDrawing(drawingName, paths)
+
+        advanceUntilIdle()
+        verify(repository, never()).insertDrawing(any())
+        verify(repository, never()).getAllDrawings()
     }
 
     @Test
     fun loadDrawingById_success() = runTest {
-        // Test loading a specific drawing by ID
         val drawingId = 1
         val drawing = Drawing(
             drawingId,
@@ -104,62 +121,35 @@ class DrawingViewModelTest {
             "[{\"points\":[0,0,100,100],\"color\":0,\"strokeWidth\":5.0,\"alpha\":255,\"shape\":\"ROUND\"}]",
             ""
         )
-        whenever(drawingDao.getDrawingById(drawingId)).thenReturn(drawing)
+        whenever(repository.getDrawingById(drawingId)).thenReturn(drawing)
 
         viewModel.loadDrawingById(drawingId)
 
         advanceUntilIdle()
         verify(loadedPathsObserver).onChanged(check { paths ->
-            assertNotNull(paths)  // Verify the paths are not null
-            assertTrue(paths.isNotEmpty())  // Ensure the paths list is not empty
+            assertNotNull(paths)
+            assertTrue(paths.isNotEmpty())
         })
     }
 
     @Test
-    fun deleteDrawing_success() = runTest {
-        // Test deleting a drawing
-        val drawing = Drawing(1, "Test Drawing", "", "")
-
-        viewModel.deleteDrawing(drawing)
-
-        advanceUntilIdle()
-        verify(drawingDao, times(1)).deleteDrawing(drawing)  // Verify the delete is called
-        verify(drawingDao, times(1)).getAllDrawings()  // Ensure getAllDrawings() is called
-    }
-
-    @Test
     fun loadDrawingById_notFound() = runTest {
-        // Test case where drawing is not found by ID
         val drawingId = 1
-        whenever(drawingDao.getDrawingById(drawingId)).thenReturn(null)
+        whenever(repository.getDrawingById(drawingId)).thenReturn(null)
 
         viewModel.loadDrawingById(drawingId)
 
         advanceUntilIdle()
-        verify(loadedPathsObserver, never()).onChanged(any())  // Ensure no changes in observer
-    }
-
-    @Test
-    fun saveDrawing_emptyName() = runTest {
-        // Test that saving a drawing with an empty name doesn't save it
-        val drawingName = ""
-        val paths = listOf<DrawingView.PathData>()
-
-        viewModel.saveDrawing(drawingName, paths)
-
-        advanceUntilIdle()
-        verify(drawingDao, never()).insertDrawing(any())  // Verify insert is not called
-        verify(drawingDao, never()).getAllDrawings()  // Verify getAllDrawings() is not called
+        verify(loadedPathsObserver, never()).onChanged(any())
     }
 
     @Test
     fun loadAllDrawings_empty() = runTest {
-        // Test loading an empty list of drawings
-        whenever(drawingDao.getAllDrawings()).thenReturn(emptyList())
+        whenever(repository.getAllDrawings()).thenReturn(emptyList())
 
         viewModel.loadAllDrawings()
 
         advanceUntilIdle()
-        verify(allDrawingsObserver).onChanged(emptyList())  // Verify empty list is returned
+        verify(allDrawingsObserver).onChanged(emptyList())
     }
 }

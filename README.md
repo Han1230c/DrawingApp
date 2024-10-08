@@ -1,9 +1,8 @@
-
 # DrawingApp
 
 ## Project Overview
 
-**DrawingApp** is an Android application that allows users to create drawings using different shapes, colors, and stroke widths. The app uses the **MVVM architecture** to manage the drawing state and ensure data persistence across screen rotations. The user can also modify the alpha (opacity) of the strokes and clear the canvas to start fresh.
+**DrawingApp** is an Android application that allows users to create drawings using different shapes, colors, and stroke widths. The app uses the **MVVM architecture** to manage the drawing state and ensure data persistence across screen rotations. Users can also modify the alpha (opacity) of the strokes and clear the canvas to start fresh.
 
 This is the **first phase** of the project, which demonstrates basic drawing functionality and partial data persistence.
 
@@ -26,6 +25,7 @@ This is the **first phase** of the project, which demonstrates basic drawing fun
 ### Prerequisites
 
 To run this project, you'll need the following tools:
+
 - **Android Studio** (Arctic Fox or later)
 - **Java 8 or later**
 - **Gradle 7.0 or later**
@@ -42,10 +42,21 @@ To run this project, you'll need the following tools:
 ## Architecture
 
 This app follows the **MVVM architecture**:
+
 - **Model**: Holds the drawing data such as paths, paint configurations, and user-selected shapes.
 - **ViewModel**: Manages the data and communicates with the view while being lifecycle-aware, retaining data on screen rotation.
 - **View**: Displays the drawing canvas and handles user interactions like touch events, button clicks, and SeekBar adjustments.
 
-## License
+## Testing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+The project includes both unit tests and instrumented tests:
+
+- **Unit Tests**: Test individual components of the app, such as the ViewModel and Repository.
+- **Instrumented Tests**: Test the UI components and their interactions, including the DrawingView and DrawingFragment.
+
+To run the tests:
+
+1. For unit tests, right-click on the test directory and select "Run Tests in ...".
+2. For instrumented tests, ensure you have an emulator running or a device connected, then right-click on the androidTest directory and select "Run Tests in ...".
+
+

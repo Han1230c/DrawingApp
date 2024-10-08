@@ -7,6 +7,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.drawingapp.data.Drawing
+import com.example.drawingapp.ui.components.HomeScreen
 import org.junit.Assert.assertTrue
 
 @RunWith(AndroidJUnit4::class)

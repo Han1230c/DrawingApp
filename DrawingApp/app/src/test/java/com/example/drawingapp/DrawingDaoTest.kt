@@ -3,6 +3,9 @@ package com.example.drawingapp
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.example.drawingapp.data.AppDatabase
+import com.example.drawingapp.data.Drawing
+import com.example.drawingapp.data.DrawingDao
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before

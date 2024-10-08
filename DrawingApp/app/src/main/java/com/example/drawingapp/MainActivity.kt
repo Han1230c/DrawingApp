@@ -6,15 +6,23 @@ import androidx.appcompat.widget.Toolbar
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
+import com.example.drawingapp.data.AppDatabase
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.viewmodel.DrawingViewModelFactory
 
 class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
+    private lateinit var repository: DrawingRepository
+    private lateinit var viewModelFactory: DrawingViewModelFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        AppDatabase.getDatabase(this)
+        // Initialize Repository and ViewModelFactory
+        val db = AppDatabase.getDatabase(this)
+        repository = DrawingRepository(db.drawingDao())
+        viewModelFactory = DrawingViewModelFactory(repository)
 
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)

@@ -1,24 +1,28 @@
-package com.example.drawingapp
+package com.example.drawingapp.viewmodel
 
-import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PathMeasure
-import android.util.Log
+import android.graphics.Paint
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
+import com.example.drawingapp.data.Drawing
+import com.example.drawingapp.data.DrawingRepository
+import com.example.drawingapp.data.SerializablePath
+import com.example.drawingapp.DrawingView
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.launch
 
-class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
+class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() {
 
     private val _allDrawings = MutableLiveData<List<Drawing>>()
     val allDrawings: LiveData<List<Drawing>> = _allDrawings
 
     private val _loadedPaths = MutableLiveData<List<DrawingView.PathData>>()
     val loadedPaths: LiveData<List<DrawingView.PathData>> = _loadedPaths
+
+    // Remove init block to avoid automatic loading
 
     fun saveDrawing(name: String, paths: List<DrawingView.PathData>) {
         if (name.isBlank()) {
@@ -38,22 +42,26 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
 
                 val serializedPaths = Gson().toJson(serializablePaths)
 
+                // Generate thumbnail (Optional: Implement thumbnail generation logic)
+                val thumbnail = "" // Placeholder
+
                 val drawing = Drawing(
                     name = name,
                     serializedPaths = serializedPaths,
-                    thumbnail = ""
+                    thumbnail = thumbnail
                 )
-                drawingDao.insertDrawing(drawing)
+                repository.insertDrawing(drawing)
 
                 loadAllDrawings()
             } catch (e: Exception) {
+                // Handle exception (e.g., log error)
             }
         }
     }
 
     private fun approximatePath(path: Path): List<Float> {
         val points = mutableListOf<Float>()
-        val pm = PathMeasure(path, false)
+        val pm = android.graphics.PathMeasure(path, false)
         do {
             val length = pm.length
             var distance = 0f
@@ -71,7 +79,7 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
 
     fun loadAllDrawings() {
         viewModelScope.launch {
-            val drawings = drawingDao.getAllDrawings()
+            val drawings = repository.getAllDrawings()
             _allDrawings.value = drawings
         }
     }
@@ -79,13 +87,13 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
     fun loadDrawingById(id: Int) {
         viewModelScope.launch {
             try {
-                val drawing = drawingDao.getDrawingById(id)
+                val drawing = repository.getDrawingById(id)
                 if (drawing != null) {
                     val paths = convertDrawingToPaths(drawing)
                     _loadedPaths.value = paths
                 }
             } catch (e: Exception) {
-                // Error handling
+                // Handle exception
             }
         }
     }
@@ -118,7 +126,7 @@ class DrawingViewModel(private val drawingDao: DrawingDao) : ViewModel() {
 
     fun deleteDrawing(drawing: Drawing) {
         viewModelScope.launch {
-            drawingDao.deleteDrawing(drawing)
+            repository.deleteDrawing(drawing)
             loadAllDrawings()
         }
     }

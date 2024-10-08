@@ -1,10 +1,10 @@
-package com.example.drawingapp
+package com.example.drawingapp.data
 
 import androidx.room.*
 
 @Dao
 interface DrawingDao {
-    @Query("SELECT * FROM drawings")
+    @Query("SELECT * FROM drawings ORDER BY id DESC")
     suspend fun getAllDrawings(): List<Drawing>
 
     @Insert
