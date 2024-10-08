@@ -21,6 +21,7 @@ class DrawingDaoTest {
 
     @Before
     fun createDb() {
+        // Create an in-memory database before each test
         val context = ApplicationProvider.getApplicationContext<Context>()
         db = Room.inMemoryDatabaseBuilder(
             context, AppDatabase::class.java
@@ -31,34 +32,38 @@ class DrawingDaoTest {
     @After
     @Throws(IOException::class)
     fun closeDb() {
+        // Close the database after each test
         db.close()
     }
 
     @Test
     @Throws(Exception::class)
     fun insertAndGetDrawing() = runBlocking {
+        // Test inserting a drawing and retrieving it by ID
         val drawing = Drawing(name = "Test Drawing", serializedPaths = "[]", thumbnail = "")
         drawingDao.insertDrawing(drawing)
         val retrievedDrawing = drawingDao.getDrawingById(1)
-        assertNotNull(retrievedDrawing)
-        assertEquals("Test Drawing", retrievedDrawing?.name)
+        assertNotNull(retrievedDrawing)  // Ensure the drawing is not null
+        assertEquals("Test Drawing", retrievedDrawing?.name)  // Verify the name matches
     }
 
     @Test
     @Throws(Exception::class)
     fun getAllDrawings() = runBlocking {
+        // Test retrieving all inserted drawings
         val drawing1 = Drawing(name = "Drawing 1", serializedPaths = "[]", thumbnail = "")
         val drawing2 = Drawing(name = "Drawing 2", serializedPaths = "[]", thumbnail = "")
         drawingDao.insertDrawing(drawing1)
         drawingDao.insertDrawing(drawing2)
 
         val allDrawings = drawingDao.getAllDrawings()
-        assertEquals(2, allDrawings.size)
+        assertEquals(2, allDrawings.size)  // Ensure there are exactly 2 drawings
     }
 
     @Test
     @Throws(Exception::class)
     fun deleteDrawing() = runBlocking {
+        // Test deleting a drawing from the database
         val drawing = Drawing(name = "Test Drawing", serializedPaths = "[]", thumbnail = "")
         drawingDao.insertDrawing(drawing)
 
@@ -66,6 +71,6 @@ class DrawingDaoTest {
         drawingDao.deleteDrawing(insertedDrawing)
 
         val allDrawings = drawingDao.getAllDrawings()
-        assertTrue(allDrawings.isEmpty())
+        assertTrue(allDrawings.isEmpty())  // Ensure the drawing has been deleted
     }
 }

@@ -22,75 +22,86 @@ class DrawingViewTest {
 
     @Before
     fun setup() {
+        // Setup the context and DrawingView instance before each test
         context = ApplicationProvider.getApplicationContext()
         drawingView = DrawingView(context)
     }
 
     @Test
     fun testInitialState() {
+        // Test that the initial state of DrawingView contains no paths
         val paths = drawingView.getPaths()
-        assertTrue(paths.isEmpty())
+        assertTrue(paths.isEmpty())  // Ensure no paths are present initially
     }
 
     @Test
     fun testDrawing() {
-        simulateDrawing()
+        // Test that drawing on the view creates a new path
+        simulateDrawing()  // Simulate a drawing action
         val paths = drawingView.getPaths()
-        assertEquals(1, paths.size)
+        assertEquals(1, paths.size)  // Verify that one path has been added
     }
 
     @Test
     fun testClearCanvas() {
-        simulateDrawing()
-        drawingView.clearCanvas()
+        // Test clearing the canvas removes all paths
+        simulateDrawing()  // Simulate a drawing action
+        drawingView.clearCanvas()  // Clear the canvas
         val paths = drawingView.getPaths()
-        assertTrue(paths.isEmpty())
+        assertTrue(paths.isEmpty())  // Ensure all paths are cleared
     }
 
     @Test
     fun testSetPaintColor() {
-        drawingView.setPaintColor(Color.RED)
-        assertEquals(Color.RED, drawingView.getCurrentPaint().color)
+        // Test setting the paint color
+        drawingView.setPaintColor(Color.RED)  // Set the paint color to red
+        assertEquals(Color.RED, drawingView.getCurrentPaint().color)  // Verify the color is set correctly
     }
 
     @Test
     fun testSetStrokeWidth() {
-        drawingView.setStrokeWidth(20f)
-        assertEquals(20f, drawingView.getCurrentPaint().strokeWidth)
+        // Test setting the stroke width
+        drawingView.setStrokeWidth(20f)  // Set stroke width to 20
+        assertEquals(20f, drawingView.getCurrentPaint().strokeWidth)  // Verify the stroke width is updated
     }
 
     @Test
     fun testSetAlpha() {
-        drawingView.setAlpha(128)
-        assertEquals(128, drawingView.getCurrentPaint().alpha)
+        // Test setting the paint alpha (transparency)
+        drawingView.setAlpha(128)  // Set alpha value to 128
+        assertEquals(128, drawingView.getCurrentPaint().alpha)  // Verify the alpha value is updated
     }
 
     @Test
     fun testSetShape() {
-        // Since shape affects drawing, we can only test if it doesn't crash
-        drawingView.setShape(PenShape.SQUARE)
-        simulateDrawing()
-        // If we reach here without exception, the test passes
+        // Test setting the shape of the drawing tool
+        drawingView.setShape(PenShape.SQUARE)  // Set the shape to square
+        simulateDrawing()  // Simulate drawing with the new shape
+        // If no exception occurs, the test passes
     }
 
     @Test
     fun testLoadPaths() {
-        simulateDrawing()
+        // Test loading paths from a previous drawing
+        simulateDrawing()  // Simulate a drawing action
         val originalPaths = drawingView.getPaths()
 
+        // Create a new DrawingView and load the original paths into it
         val newDrawingView = DrawingView(context)
         newDrawingView.loadPaths(originalPaths)
 
+        // Verify that the paths were loaded correctly
         val loadedPaths = newDrawingView.getPaths()
-        assertEquals(originalPaths.size, loadedPaths.size)
+        assertEquals(originalPaths.size, loadedPaths.size)  // Ensure the number of paths matches
     }
 
-
+    // Helper function to simulate a drawing action by sending touch events
     private fun simulateDrawing() {
         val downEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, 10f, 10f, 0)
         val moveEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_MOVE, 20f, 20f, 0)
         val upEvent = MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 30f, 30f, 0)
 
+        // Simulate the drawing process with touch events
         drawingView.onTouchEvent(downEvent)
         drawingView.onTouchEvent(moveEvent)
         drawingView.onTouchEvent(upEvent)
@@ -100,10 +111,11 @@ class DrawingViewTest {
         upEvent.recycle()
     }
 
+    // Helper function to draw the view to a bitmap for testing rendering
     private fun drawToBitmap(): Bitmap {
         val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        drawingView.draw(canvas)
+        drawingView.draw(canvas)  // Draw the view onto a bitmap
         return bitmap
     }
 }

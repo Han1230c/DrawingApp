@@ -71,36 +71,32 @@ class DrawingViewModelTest {
 
     @Test
     fun loadAllDrawings_success() = runTest {
-        // Given
+        // Test loading all drawings from the database successfully
         val drawings = listOf(Drawing(1, "Test Drawing", "", ""))
         whenever(drawingDao.getAllDrawings()).thenReturn(drawings)
 
-        // When
         viewModel.loadAllDrawings()
 
-        // Then
         advanceUntilIdle()
-        verify(allDrawingsObserver).onChanged(drawings)
+        verify(allDrawingsObserver).onChanged(drawings)  // Verify observer gets the correct data
     }
 
     @Test
     fun saveDrawing_success() = runTest {
-        // Given
+        // Test saving a new drawing
         val drawingName = "New Drawing"
         val paths = listOf(DrawingView.PathData(Path(), Paint(), PenShape.ROUND))
 
-        // When
         viewModel.saveDrawing(drawingName, paths)
 
-        // Then
         advanceUntilIdle()
-        verify(drawingDao, times(1)).insertDrawing(any())
-        verify(drawingDao, times(1)).getAllDrawings()
+        verify(drawingDao, times(1)).insertDrawing(any())  // Ensure the drawing is inserted
+        verify(drawingDao, times(1)).getAllDrawings()  // Ensure getAllDrawings() is called
     }
 
     @Test
     fun loadDrawingById_success() = runTest {
-        // Given
+        // Test loading a specific drawing by ID
         val drawingId = 1
         val drawing = Drawing(
             drawingId,
@@ -110,70 +106,60 @@ class DrawingViewModelTest {
         )
         whenever(drawingDao.getDrawingById(drawingId)).thenReturn(drawing)
 
-        // When
         viewModel.loadDrawingById(drawingId)
 
-        // Then
         advanceUntilIdle()
         verify(loadedPathsObserver).onChanged(check { paths ->
-            assertNotNull(paths)
-            assertTrue(paths.isNotEmpty())
+            assertNotNull(paths)  // Verify the paths are not null
+            assertTrue(paths.isNotEmpty())  // Ensure the paths list is not empty
         })
     }
 
     @Test
     fun deleteDrawing_success() = runTest {
-        // Given
+        // Test deleting a drawing
         val drawing = Drawing(1, "Test Drawing", "", "")
 
-        // When
         viewModel.deleteDrawing(drawing)
 
-        // Then
         advanceUntilIdle()
-        verify(drawingDao, times(1)).deleteDrawing(drawing)
-        verify(drawingDao, times(1)).getAllDrawings()
+        verify(drawingDao, times(1)).deleteDrawing(drawing)  // Verify the delete is called
+        verify(drawingDao, times(1)).getAllDrawings()  // Ensure getAllDrawings() is called
     }
 
     @Test
     fun loadDrawingById_notFound() = runTest {
-        // Given
+        // Test case where drawing is not found by ID
         val drawingId = 1
         whenever(drawingDao.getDrawingById(drawingId)).thenReturn(null)
 
-        // When
         viewModel.loadDrawingById(drawingId)
 
-        // Then
         advanceUntilIdle()
-        verify(loadedPathsObserver, never()).onChanged(any())
+        verify(loadedPathsObserver, never()).onChanged(any())  // Ensure no changes in observer
     }
 
     @Test
     fun saveDrawing_emptyName() = runTest {
-        // Given
+        // Test that saving a drawing with an empty name doesn't save it
         val drawingName = ""
         val paths = listOf<DrawingView.PathData>()
 
-        // When
         viewModel.saveDrawing(drawingName, paths)
 
-        // Then
         advanceUntilIdle()
-        verify(drawingDao, never()).insertDrawing(any())
-        verify(drawingDao, never()).getAllDrawings()
+        verify(drawingDao, never()).insertDrawing(any())  // Verify insert is not called
+        verify(drawingDao, never()).getAllDrawings()  // Verify getAllDrawings() is not called
     }
 
     @Test
     fun loadAllDrawings_empty() = runTest {
-        // Given
+        // Test loading an empty list of drawings
         whenever(drawingDao.getAllDrawings()).thenReturn(emptyList())
 
-        // When
         viewModel.loadAllDrawings()
 
-        // Then
         advanceUntilIdle()
-        verify(allDrawingsObserver).onChanged(emptyList())
+        verify(allDrawingsObserver).onChanged(emptyList())  // Verify empty list is returned
     }
 }

@@ -17,6 +17,7 @@ class HomeFragmentTest {
 
     @Test
     fun homeScreen_displaysCorrectInitialState() {
+        // Test that the home screen displays the correct initial state with no drawings
         composeTestRule.setContent {
             MaterialTheme {
                 HomeScreen(
@@ -28,12 +29,14 @@ class HomeFragmentTest {
             }
         }
 
+        // Wait until the "My Drawings" text appears to ensure the screen has loaded
         composeTestRule.waitUntil(3000) {
             composeTestRule
                 .onAllNodesWithText("My Drawings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
+        // Check if the important UI elements are displayed correctly
         composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
         composeTestRule.onNodeWithText("Start New Drawing").assertIsDisplayed()
         composeTestRule.onNodeWithText("No drawings found.").assertIsDisplayed()
@@ -41,6 +44,7 @@ class HomeFragmentTest {
 
     @Test
     fun homeScreen_displaysDrawings_whenProvided() {
+        // Test that the home screen displays a list of drawings when provided
         val testDrawings = listOf(
             Drawing(1, "Test Drawing 1", "", ""),
             Drawing(2, "Test Drawing 2", "", "")
@@ -57,12 +61,14 @@ class HomeFragmentTest {
             }
         }
 
+        // Wait until the "My Drawings" text appears to ensure the screen has loaded
         composeTestRule.waitUntil(3000) {
             composeTestRule
                 .onAllNodesWithText("My Drawings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
+        // Check if the important UI elements and the test drawings are displayed correctly
         composeTestRule.onNodeWithText("My Drawings").assertIsDisplayed()
         composeTestRule.onNodeWithText("Start New Drawing").assertIsDisplayed()
         composeTestRule.onNodeWithText("Saved Drawings:").assertIsDisplayed()
@@ -72,6 +78,7 @@ class HomeFragmentTest {
 
     @Test
     fun startDrawingButton_triggersCallback() {
+        // Test that clicking the "Start New Drawing" button triggers the callback
         var buttonClicked = false
         composeTestRule.setContent {
             MaterialTheme {
@@ -84,13 +91,15 @@ class HomeFragmentTest {
             }
         }
 
+        // Wait until the "Start New Drawing" button appears to ensure the screen has loaded
         composeTestRule.waitUntil(3000) {
             composeTestRule
                 .onAllNodesWithText("Start New Drawing")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
+        // Perform a click on the "Start New Drawing" button and verify the callback was triggered
         composeTestRule.onNodeWithText("Start New Drawing").performClick()
-        assertTrue(buttonClicked)
+        assertTrue(buttonClicked)  // Assert that the button click updated the variable
     }
 }

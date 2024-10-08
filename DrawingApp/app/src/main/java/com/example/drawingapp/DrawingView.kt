@@ -30,7 +30,7 @@ class DrawingView @JvmOverloads constructor(
         strokeCap = Paint.Cap.ROUND
         strokeJoin = Paint.Join.ROUND
     }
-    private var currentShape = PenShape.ROUND
+    var currentShape = PenShape.ROUND
 
     private var startX = 0f
     private var startY = 0f
@@ -39,6 +39,7 @@ class DrawingView @JvmOverloads constructor(
 
     fun setPaintColor(color: Int) {
         currentPaint.color = color
+        invalidate()
     }
 
     fun setStrokeWidth(width: Float) {
@@ -47,6 +48,7 @@ class DrawingView @JvmOverloads constructor(
 
     fun setAlpha(alpha: Int) {
         currentPaint.alpha = alpha
+        invalidate()
     }
 
     fun setShape(shape: PenShape) {
