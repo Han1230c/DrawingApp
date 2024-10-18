@@ -16,4 +16,9 @@ open class DrawingRepository(private val drawingDao: DrawingDao) {
     open suspend fun getDrawingById(id: Int): Drawing? {
         return drawingDao.getDrawingById(id)
     }
+
+    open suspend fun updateDrawing(drawing: Drawing) {
+        drawingDao.updateDrawing(drawing)
+    }
+
 }

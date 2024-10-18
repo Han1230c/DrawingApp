@@ -43,6 +43,8 @@ class DrawingFragment : Fragment() {
         val drawingId = arguments?.getInt("drawingId", -1) ?: -1
         if (drawingId != -1) {
             viewModel.loadDrawingById(drawingId)
+        } else {
+            viewModel.clearCurrentDrawing()
         }
 
         viewModel.loadedPaths.observe(viewLifecycleOwner) { paths ->
@@ -113,23 +115,33 @@ class DrawingFragment : Fragment() {
 
     private fun showSaveDialog() {
         val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle("Save Drawing")
         val input = android.widget.EditText(requireContext())
+
+        if (viewModel.currentDrawingName.isNotEmpty()) {
+            builder.setTitle("Update Drawing")
+            input.setText(viewModel.currentDrawingName)
+        } else {
+            builder.setTitle("Save New Drawing")
+        }
+
         builder.setView(input)
         builder.setPositiveButton("Save") { dialog, _ ->
             val drawingName = input.text.toString()
             if (drawingName.isNotEmpty()) {
                 val paths = drawingView.getPaths()
                 viewModel.saveDrawing(drawingName, paths)
-                Toast.makeText(requireContext(), "Drawing saved", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    requireContext(),
+                    if (viewModel.currentDrawingName.isNotEmpty()) "Drawing updated" else "New drawing saved",
+                    Toast.LENGTH_SHORT
+                ).show()
+                findNavController().navigate(R.id.action_drawingFragment_to_homeFragment)
             } else {
                 Toast.makeText(requireContext(), "Please enter a name", Toast.LENGTH_SHORT).show()
             }
             dialog.dismiss()
         }
-        builder.setNegativeButton("Cancel") { dialog, _ ->
-            dialog.cancel()
-        }
+        builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
         builder.show()
     }
 }

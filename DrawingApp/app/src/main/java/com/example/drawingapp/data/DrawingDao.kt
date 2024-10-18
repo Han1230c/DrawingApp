@@ -15,4 +15,7 @@ interface DrawingDao {
 
     @Query("SELECT * FROM drawings WHERE id = :id")
     suspend fun getDrawingById(id: Int): Drawing?
+
+    @Update
+    suspend fun updateDrawing(drawing: Drawing)
 }

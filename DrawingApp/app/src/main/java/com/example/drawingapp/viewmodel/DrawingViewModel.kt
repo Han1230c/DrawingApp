@@ -22,12 +22,16 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
     private val _loadedPaths = MutableLiveData<List<DrawingView.PathData>>()
     val loadedPaths: LiveData<List<DrawingView.PathData>> = _loadedPaths
 
-    // Remove init block to avoid automatic loading
+    private var currentDrawingId: Int? = null
+
+    var currentDrawingName: String = ""
+        private set
 
     fun saveDrawing(name: String, paths: List<DrawingView.PathData>) {
         if (name.isBlank()) {
             return
         }
+
         viewModelScope.launch {
             try {
                 val serializablePaths = paths.map { pathData ->
@@ -42,19 +46,29 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
 
                 val serializedPaths = Gson().toJson(serializablePaths)
 
-                // Generate thumbnail (Optional: Implement thumbnail generation logic)
-                val thumbnail = "" // Placeholder
+                val thumbnail = ""
 
-                val drawing = Drawing(
-                    name = name,
-                    serializedPaths = serializedPaths,
-                    thumbnail = thumbnail
-                )
-                repository.insertDrawing(drawing)
+                if (currentDrawingId != null) {
+                    val existingDrawing = repository.getDrawingById(currentDrawingId!!)
+                    if (existingDrawing != null) {
+                        val updatedDrawing = existingDrawing.copy(
+                            name = name,
+                            serializedPaths = serializedPaths,
+                            thumbnail = thumbnail
+                        )
+                        repository.updateDrawing(updatedDrawing)
+                    }
+                } else {
+                    val drawing = Drawing(
+                        name = name,
+                        serializedPaths = serializedPaths,
+                        thumbnail = thumbnail
+                    )
+                    repository.insertDrawing(drawing)
+                }
 
                 loadAllDrawings()
             } catch (e: Exception) {
-                // Handle exception (e.g., log error)
             }
         }
     }
@@ -89,13 +103,20 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
             try {
                 val drawing = repository.getDrawingById(id)
                 if (drawing != null) {
+                    currentDrawingId = drawing.id
+                    currentDrawingName = drawing.name
                     val paths = convertDrawingToPaths(drawing)
                     _loadedPaths.value = paths
                 }
             } catch (e: Exception) {
-                // Handle exception
             }
         }
+    }
+
+    fun clearCurrentDrawing() {
+        currentDrawingId = null
+        currentDrawingName = ""
+        _loadedPaths.value = emptyList()
     }
 
     private fun convertDrawingToPaths(drawing: Drawing): List<DrawingView.PathData> {
