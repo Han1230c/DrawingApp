@@ -17,6 +17,11 @@ import com.example.drawingapp.data.AppDatabase
 import com.example.drawingapp.data.DrawingRepository
 import com.example.drawingapp.viewmodel.DrawingViewModel
 import com.example.drawingapp.viewmodel.DrawingViewModelFactory
+import android.content.Intent
+import android.graphics.Bitmap
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 class DrawingFragment : Fragment() {
 
@@ -72,18 +77,27 @@ class DrawingFragment : Fragment() {
         view.findViewById<Button>(R.id.buttonStar).setOnClickListener {
             drawingView.setShape(PenShape.STAR)
         }
+        view.findViewById<Button>(R.id.buttonBall).setOnClickListener {
+            drawingView.setBallMode(true)
+        }
 
         // Stroke width
         val seekBarStrokeWidth = view.findViewById<SeekBar>(R.id.seekBarStrokeWidth)
         seekBarStrokeWidth.progress = 8
         seekBarStrokeWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                drawingView.setStrokeWidth(progress.toFloat())
+                if (fromUser) {
+                    drawingView.setStrokeWidth(progress.toFloat())
+                }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
+
+        drawingView.setOnStrokeWidthChangedListener { width ->
+            seekBarStrokeWidth.progress = width.toInt()
+        }
 
         // Opacity
         val seekBarAlpha = view.findViewById<SeekBar>(R.id.seekBarAlpha)
@@ -110,6 +124,10 @@ class DrawingFragment : Fragment() {
         // Back button
         view.findViewById<Button>(R.id.buttonBack).setOnClickListener {
             findNavController().navigate(R.id.action_drawingFragment_to_homeFragment)
+        }
+
+        view.findViewById<Button>(R.id.buttonShare).setOnClickListener {
+            shareDrawing()
         }
     }
 
@@ -143,5 +161,35 @@ class DrawingFragment : Fragment() {
         }
         builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
         builder.show()
+    }
+
+    private fun shareDrawing() {
+        try {
+            val bitmap = drawingView.getBitmapFromView()
+            val cachePath = File(requireContext().cacheDir, "images")
+            cachePath.mkdirs()
+
+            val imagePath = File(cachePath, "shared_image.jpg")
+            val stream = FileOutputStream(imagePath)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+            stream.close()
+
+            val uri = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.provider",
+                imagePath
+            )
+
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_STREAM, uri)
+                type = "image/jpeg"
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            startActivity(Intent.createChooser(shareIntent, "Share your drawing"))
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error sharing drawing", Toast.LENGTH_SHORT).show()
+        }
     }
 }
