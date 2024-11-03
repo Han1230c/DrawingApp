@@ -22,6 +22,7 @@ fun Route.drawingRoutes() {
         when {
             input.imageData.isNullOrBlank() ->
                 throw ValidationException("Image data is required")
+
             input.title?.length ?: 0 > 255 ->
                 throw ValidationException("Title cannot be longer than 255 characters")
         }
@@ -113,6 +114,25 @@ fun Route.drawingRoutes() {
                 call.respond(drawings)
             } catch (e: Exception) {
                 logger.error("Error getting shared drawings", e)
+                throw e
+            }
+        }
+
+        get("/drawings/shared/{id}") {
+            try {
+                val id = call.parameters["id"]?.toIntOrNull()
+                    ?: throw ValidationException("Invalid drawing ID format")
+
+                val drawing = repository.getById(id)
+                    ?: throw NotFoundException("Drawing not found with ID: $id")
+
+                if (!drawing.isShared) {
+                    throw SecurityException("This drawing is not shared")
+                }
+
+                call.respond(drawing)
+            } catch (e: Exception) {
+                logger.error("Error getting shared drawing by ID", e)
                 throw e
             }
         }

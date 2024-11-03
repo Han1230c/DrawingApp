@@ -153,17 +153,27 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
         }
     }
 
-    // Function to retrieve a drawing by its ID
     suspend fun getDrawingById(id: Int): Drawing? {
         return try {
             withContext(Dispatchers.IO) {
                 drawingDao.getDrawingById(id)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get drawing: ${e.message}")
+            Log.e(TAG, "Failed to get drawing by id: ${e.message}")
             null
         }
     }
+
+    // Function to retrieve a drawing by its ID
+    suspend fun getSharedDrawingById(id: Int): Drawing? {
+        return try {
+            ApiService.getSharedDrawingById(id)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get shared drawing by id: ${e.message}")
+            null
+        }
+    }
+
 
     // Function to update a drawing in the local database and on the server
     suspend fun updateDrawing(drawing: Drawing) {

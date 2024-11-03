@@ -174,14 +174,25 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val drawing = repository.getDrawingById(id)
+                var drawing = repository.getDrawingById(id)
                 if (drawing != null) {
+                    // Drawing found locally
                     currentDrawingId = drawing.id
                     currentDrawingName = drawing.name
                     val paths = convertDrawingToPaths(drawing)
                     _loadedPaths.value = paths
                 } else {
-                    _errorEvent.value = Event("Drawing not found")
+                    // Try to fetch from server
+                    drawing = repository.getSharedDrawingById(id)
+                    if (drawing != null) {
+                        // Drawing fetched from server
+                        currentDrawingId = drawing.id
+                        currentDrawingName = drawing.name
+                        val paths = convertDrawingToPaths(drawing)
+                        _loadedPaths.value = paths
+                    } else {
+                        _errorEvent.value = Event("Drawing not found")
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Load drawing failed: ${e.message}")
@@ -191,6 +202,7 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
             }
         }
     }
+
 
     // Delete a drawing and refresh the list
     fun deleteDrawing(drawing: Drawing) {

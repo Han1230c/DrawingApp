@@ -197,6 +197,40 @@ object ApiService {
         }
     }
 
+    suspend fun getSharedDrawingById(id: Int) = suspendCoroutine<Drawing?> { continuation ->
+        val request = Request.Builder()
+            .url("$BASE_URL/public/drawings/shared/$id")
+            .get()
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                continuation.resumeWithException(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (response.isSuccessful) {
+                        response.body?.string()?.let { json ->
+                            try {
+                                val type = object : TypeToken<Map<String, Any>>() {}.type
+                                val serverDrawing = gson.fromJson<Map<String, Any>>(json, type)
+                                continuation.resume(serverDrawing.toDrawing())
+                            } catch (e: Exception) {
+                                continuation.resumeWithException(e)
+                            }
+                        } ?: continuation.resume(null)
+                    } else {
+                        val errorBody = response.body?.string()
+                        continuation.resumeWithException(
+                            IOException("Unexpected response ${response.code}, body: $errorBody")
+                        )
+                    }
+                }
+            }
+        })
+    }
+
     // Function to retrieve shared drawings
     suspend fun getSharedDrawings() = suspendCoroutine<List<Drawing>> { continuation ->
         val request = Request.Builder()
