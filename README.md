@@ -2,61 +2,67 @@
 
 ## Project Overview
 
-**DrawingApp** is an Android application that allows users to create drawings using different shapes, colors, and stroke widths. The app uses the **MVVM architecture** to manage the drawing state and ensure data persistence across screen rotations. Users can also modify the alpha (opacity) of the strokes and clear the canvas to start fresh.
+**DrawingApp** is an Android application that allows users to create and share drawings. It features Firebase authentication and a custom Ktor backend server.
 
-This is the **first phase** of the project, which demonstrates basic drawing functionality and partial data persistence.
+## Key Features
 
-## Features
+### Drawing Features
+- **Multiple Drawing Tools**: Round brush, Square, Star, and Ball mode (with accelerometer support)
+- **Basic Colors**: Black, Red, and Blue
+- **Brush Customization**: Adjustable width and opacity
+- **Clear Canvas**: One-click reset
 
-- **Draw Shapes**: Users can draw free-form lines or choose from pre-defined shapes like **round**, **square**, and **star**.
-- **Change Stroke Color**: Users can select from three colors: **black**, **red**, and **blue**.
-- **Adjust Stroke Width**: Users can control the thickness of the strokes using a **SeekBar**.
-- **Adjust Alpha (Opacity)**: Users can change the transparency of the strokes with a **SeekBar**.
-- **Clear Canvas**: A button is provided to clear the drawing and start fresh.
-- **MVVM Architecture**: The app uses the **MVVM pattern** to manage the drawing state, ensuring lifecycle-awareness and better code separation.
-- **Data Persistence**: The app preserves the drawing state during screen rotations but does not yet save the drawings between app restarts (this will be covered in Phase 2).
+### Social Features
+- **User Authentication**: Email/password login via Firebase
+- **Drawing Sharing**: Users can share their artwork
+- **Online Sync**: Automatic refresh of shared works
+- **Offline Support**: Local storage with Room database
 
-## Screens
+## Technical Architecture
 
-1. **Drawing Screen**: Main screen where users can draw, modify pen attributes, and clear the canvas.
+### App Architecture (MVVM)
+- **Model**: 
+  - Room database (Drawing, DrawingDao)
+  - Repository pattern for data handling
+- **ViewModel**: DrawingViewModel managing UI states
+- **View**: 
+  - Custom DrawingView for drawing functionality
+  - Compose UI for main interface
 
-## Setup
+### Network Layer
+- OkHttp client
+- API service
+- Firebase UID based authentication
 
-### Prerequisites
+### Backend Server (Ktor)
+- RESTful API endpoints
+- H2 in-memory database
+- Token-based authentication system
 
-To run this project, you'll need the following tools:
+## API Endpoints
+- POST /drawings            - Create new drawing
+- GET  /drawings/{id}      - Get specific drawing
+- POST /drawings/{id}/share - Share drawing
+- GET  /public/drawings/shared - Get all shared drawings
 
-- **Android Studio** (Arctic Fox or later)
-- **Java 8 or later**
-- **Gradle 7.0 or later**
+## Development Setup
 
-### How to Use
+### Requirements
+- Android Studio
+- Firebase project configuration
+- Ktor backend server
 
-1. **Draw**: Tap and drag your finger on the screen to draw.
-2. **Change Color**: Click on one of the color buttons (**Black**, **Red**, **Blue**) to change the pen color.
-3. **Adjust Stroke Width**: Use the **SeekBar** to increase or decrease the thickness of the strokes.
-4. **Adjust Alpha (Opacity)**: Use the **SeekBar** to modify the transparency of the strokes.
-5. **Clear Canvas**: Click the **Clear** button to erase all drawings and start over.
-6. **Shape Selection**: Choose a shape (**Round**, **Square**, or **Star**) from the provided buttons to draw that shape.
+### Configuration Steps
+1. Configure Firebase (`google-services.json`)
+2. Update `MainActivity.SERVER_IP` with backend server address (default 10.0.2.2)
+3. Run backend server
+4. Launch Android app
 
-## Architecture
-
-This app follows the **MVVM architecture**:
-
-- **Model**: Holds the drawing data such as paths, paint configurations, and user-selected shapes.
-- **ViewModel**: Manages the data and communicates with the view while being lifecycle-aware, retaining data on screen rotation.
-- **View**: Displays the drawing canvas and handles user interactions like touch events, button clicks, and SeekBar adjustments.
-
-## Testing
-
-The project includes both unit tests and instrumented tests:
-
-- **Unit Tests**: Test individual components of the app, such as the ViewModel and Repository.
-- **Instrumented Tests**: Test the UI components and their interactions, including the DrawingView and DrawingFragment.
-
-To run the tests:
-
-1. For unit tests, right-click on the test directory and select "Run Tests in ...".
-2. For instrumented tests, ensure you have an emulator running or a device connected, then right-click on the androidTest directory and select "Run Tests in ...".
-
-
+## Major Dependencies
+```gradle
+- Firebase Authentication
+- Room Database
+- Jetpack Compose
+- OkHttp3
+- Gson
+- Kotlin Coroutines

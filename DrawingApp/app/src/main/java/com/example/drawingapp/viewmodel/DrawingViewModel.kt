@@ -17,6 +17,19 @@ import kotlinx.coroutines.*
 
 class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() {
 
+    class Event<out T>(private val content: T) {
+        private var hasBeenHandled = false
+
+        fun getContentIfNotHandled(): T? {
+            return if (hasBeenHandled) {
+                null
+            } else {
+                hasBeenHandled = true
+                content
+            }
+        }
+    }
+
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
@@ -29,8 +42,8 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
     private val _sharedDrawings = MutableLiveData<List<Drawing>>()
     val sharedDrawings: LiveData<List<Drawing>> = _sharedDrawings
 
-    private val _errorEvent = MutableLiveData<String>()
-    val errorEvent: LiveData<String> = _errorEvent
+    private val _errorEvent = MutableLiveData<Event<String>>()
+    val errorEvent: LiveData<Event<String>> = _errorEvent
 
     private var currentDrawingId: Int? = null
 
@@ -85,7 +98,7 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
                             thumbnail = thumbnail
                         )
                         repository.updateDrawing(updatedDrawing)
-                        _errorEvent.value = "Drawing updated successfully"
+                        _errorEvent.value = Event("Drawing updated successfully")
                     }
                 } else {
                     val drawing = Drawing(
@@ -95,13 +108,12 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
                         isShared = false
                     )
                     repository.insertDrawing(drawing)
-                    _errorEvent.value = "Drawing saved successfully"
+                    _errorEvent.value = Event("Drawing saved successfully")
                 }
-
                 loadAllDrawings()
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Save failed: ${e.message}")
-                _errorEvent.value = "Failed to save drawing: ${e.message}"
+                _errorEvent.value = Event("Failed to save drawing: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -116,7 +128,7 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
                 _sharedDrawings.value = drawings
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Load shared drawings failed: ${e.message}")
-                _errorEvent.value = "Failed to load shared drawings: ${e.message}"
+                _errorEvent.value = Event("Failed to load shared drawings: ${e.message}")
                 _sharedDrawings.value = emptyList()
             }
         }
@@ -128,12 +140,12 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
             try {
                 _isLoading.value = true
                 repository.shareDrawing(drawing)
-                _errorEvent.value = "Drawing shared successfully"
+                _errorEvent.value = Event("Drawing shared successfully")
                 loadAllDrawings()
                 loadSharedDrawings()
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Share failed: ${e.message}")
-                _errorEvent.value = e.message ?: "Failed to share drawing"
+                _errorEvent.value = Event(e.message ?: "Failed to share drawing")
             } finally {
                 _isLoading.value = false
             }
@@ -149,7 +161,7 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
                 _allDrawings.value = drawings
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Load all drawings failed: ${e.message}")
-                _errorEvent.value = "Failed to load drawings: ${e.message}"
+                _errorEvent.value = Event("Failed to load drawings: ${e.message}")
                 _allDrawings.value = emptyList()
             } finally {
                 _isLoading.value = false
@@ -169,11 +181,11 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
                     val paths = convertDrawingToPaths(drawing)
                     _loadedPaths.value = paths
                 } else {
-                    _errorEvent.value = "Drawing not found"
+                    _errorEvent.value = Event("Drawing not found")
                 }
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Load drawing failed: ${e.message}")
-                _errorEvent.value = "Failed to load drawing: ${e.message}"
+                _errorEvent.value = Event("Failed to load drawing: ${e.message}")
             } finally {
                 _isLoading.value = false
             }
@@ -186,11 +198,11 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
             try {
                 _isLoading.value = true
                 repository.deleteDrawing(drawing)
-                _errorEvent.value = "Drawing deleted successfully"
+                _errorEvent.value = Event("Drawing deleted successfully")
                 loadAllDrawings()
             } catch (e: Exception) {
                 Log.e("DrawingViewModel", "Delete failed: ${e.message}")
-                _errorEvent.value = "Failed to delete drawing: ${e.message}"
+                _errorEvent.value = Event("Failed to delete drawing: ${e.message}")
             } finally {
                 _isLoading.value = false
             }

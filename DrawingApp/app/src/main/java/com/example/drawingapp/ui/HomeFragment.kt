@@ -98,8 +98,8 @@ class HomeFragment : Fragment() {
                     )
 
                     // Show error messages as a toast
-                    errorMessage?.let { error ->
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    errorMessage?.getContentIfNotHandled()?.let { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 }
             }

@@ -11,9 +11,12 @@ import java.io.IOException
 class DrawingRepository(private val drawingDao: DrawingDao) {
     private val auth = FirebaseAuth.getInstance()
     private val pendingUploads = mutableSetOf<Int>()
+    private var lastSharedCount = 0
+    private var lastLogTime = 0L
 
     companion object {
         private const val TAG = "DrawingRepository"
+        private const val LOG_INTERVAL = 5000L
     }
 
     private fun getCurrentUserId(): String {
@@ -103,12 +106,12 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
             withContext(Dispatchers.IO) {
                 drawingDao.deleteDrawing(drawing)
             }
-            pendingUploads.remove(drawing.id)
 
-            // If the drawing exists on the server, attempt to delete it
             if (!pendingUploads.contains(drawing.id)) {
                 try {
                     ApiService.deleteDrawing(drawing.id)
+                    // 只记录一次成功日志
+                    Log.d(TAG, "Successfully deleted drawing ${drawing.id}")
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to delete drawing from server: ${e.message}")
                 }
@@ -118,6 +121,7 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
             throw Exception("Failed to delete drawing: ${e.message}")
         }
     }
+
 
     // Function to retrieve all drawings for the current user
     suspend fun getAllDrawings(): List<Drawing> {
@@ -134,9 +138,15 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
     // Function to retrieve all shared drawings from the server
     suspend fun getSharedDrawings(): List<Drawing> {
         return try {
-            ApiService.getSharedDrawings().also { drawings ->
+            val drawings = ApiService.getSharedDrawings()
+            val currentTime = System.currentTimeMillis()
+
+            if (drawings.size != lastSharedCount || (currentTime - lastLogTime) > LOG_INTERVAL) {
+                lastSharedCount = drawings.size
+                lastLogTime = currentTime
                 Log.d(TAG, "Got ${drawings.size} shared drawings from server")
             }
+            drawings
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get shared drawings: ${e.message}")
             emptyList()
@@ -194,7 +204,11 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                 throw IllegalStateException("Only the creator can share this drawing")
             }
 
-            Log.d(TAG, "Sharing drawing with id: ${drawing.id}")
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastLogTime > LOG_INTERVAL) {
+                Log.d(TAG, "Starting to share drawing with id: ${drawing.id}")
+                lastLogTime = currentTime
+            }
 
             try {
                 var serverDrawing = drawing
@@ -207,7 +221,6 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                         withContext(Dispatchers.IO) {
                             try {
                                 drawingDao.safeUpdateDrawingId(drawing.id, serverDrawing.id)
-                                Log.d(TAG, "Successfully updated drawing ID from ${drawing.id} to ${serverDrawing.id}")
                             } catch (e: Exception) {
                                 Log.e(TAG, "Failed to update drawing ID: ${e.message}")
                                 serverDrawing = drawing  // Continue with original ID if update fails
@@ -226,7 +239,8 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                 retry(maxAttempts = 3) {
                     try {
                         ApiService.shareDrawing(serverDrawing.id)
-                        Log.d(TAG, "Successfully shared drawing ${serverDrawing.id} on server")
+                        // 只在最终成功时记录一次日志
+                        Log.d(TAG, "Successfully shared drawing ${serverDrawing.id}")
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to share drawing on server: ${e.message}")
                         // Retry upload if 404 error occurs
@@ -238,7 +252,6 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                                 withContext(Dispatchers.IO) {
                                     try {
                                         drawingDao.safeUpdateDrawingId(updatedDrawing.id, serverDrawing.id)
-                                        Log.d(TAG, "Successfully updated drawing ID from ${updatedDrawing.id} to ${serverDrawing.id}")
                                     } catch (e: Exception) {
                                         Log.e(TAG, "Failed to update drawing ID: ${e.message}")
                                     }
@@ -256,7 +269,7 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                     withContext(Dispatchers.IO) {
                         drawingDao.updateDrawing(drawing)
                     }
-                } catch                (rollbackError: Exception) {
+                } catch (rollbackError: Exception) {
                     Log.e(TAG, "Failed to rollback drawing state: ${rollbackError.message}")
                 }
                 throw e

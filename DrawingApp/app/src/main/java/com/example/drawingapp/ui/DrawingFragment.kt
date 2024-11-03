@@ -54,9 +54,9 @@ class DrawingFragment : Fragment() {
         }
 
         // Observe error messages
-        viewModel.errorEvent.observe(viewLifecycleOwner) { error ->
-            error?.let {
-                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+        viewModel.errorEvent.observe(viewLifecycleOwner) { event ->
+            event?.getContentIfNotHandled()?.let { error ->
+                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show()
             }
         }
 
