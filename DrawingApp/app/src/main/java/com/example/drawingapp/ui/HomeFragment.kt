@@ -1,24 +1,17 @@
 package com.example.drawingapp.ui
 
 import android.app.AlertDialog
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
+import android.widget.Toast
+import androidx.compose.material.MaterialTheme
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -29,40 +22,108 @@ import com.example.drawingapp.data.DrawingRepository
 import com.example.drawingapp.ui.components.HomeScreen
 import com.example.drawingapp.viewmodel.DrawingViewModel
 import com.example.drawingapp.viewmodel.DrawingViewModelFactory
-import androidx.compose.runtime.livedata.observeAsState // Added import
+import androidx.compose.runtime.livedata.observeAsState
+import com.google.firebase.auth.FirebaseAuth
 
 class HomeFragment : Fragment() {
     private val viewModel: DrawingViewModel by viewModels {
         val repository = DrawingRepository(AppDatabase.getDatabase(requireContext()).drawingDao())
         DrawingViewModelFactory(repository)
     }
+    private val auth = FirebaseAuth.getInstance()
+    private lateinit var connectivityManager: ConnectivityManager
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setupNetworkCallback()
+    }
+
+    // Setup network callback to monitor connectivity changes
+    private fun setupNetworkCallback() {
+        connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                activity?.runOnUiThread {
+                    viewModel.loadAllDrawings()
+                    viewModel.loadSharedDrawings()
+                }
+            }
+        }
+        connectivityManager.registerDefaultNetworkCallback(networkCallback!!)
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         return ComposeView(requireContext()).apply {
             setContent {
                 MaterialTheme {
-                    // Use observeAsState instead of collectAsState
                     val drawings by viewModel.allDrawings.observeAsState(initial = emptyList())
+                    val sharedDrawings by viewModel.sharedDrawings.observeAsState(initial = emptyList())
+                    val isLoading by viewModel.isLoading.observeAsState(initial = false)
+                    val errorMessage by viewModel.errorEvent.observeAsState()
+
                     HomeScreen(
                         onStartDrawingClick = {
                             findNavController().navigate(R.id.action_homeFragment_to_drawingFragment)
                         },
                         drawings = drawings,
+                        sharedDrawings = sharedDrawings,
                         onDrawingClick = { drawing ->
                             val bundle = Bundle().apply {
                                 putInt("drawingId", drawing.id)
                             }
-                            findNavController().navigate(R.id.action_homeFragment_to_drawingFragment, bundle)
+                            findNavController().navigate(
+                                R.id.action_homeFragment_to_drawingFragment,
+                                bundle
+                            )
                         },
                         onDeleteClick = { drawing ->
                             showDeleteConfirmationDialog(drawing)
-                        }
+                        },
+                        onShareClick = { drawing ->
+                            showShareDialog(drawing)
+                        },
+                        onLogoutClick = {
+                            showLogoutConfirmationDialog()
+                        },
+                        onRefresh = { // Refresh drawings and shared drawings
+                            viewModel.loadAllDrawings()
+                            viewModel.loadSharedDrawings()
+                        },
+                        isLoading = isLoading
                     )
+
+                    // Show error messages as a toast
+                    errorMessage?.let { error ->
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
     }
 
+    // Show confirmation dialog for sharing a drawing
+    private fun showShareDialog(drawing: Drawing) {
+        if (drawing.userId != auth.currentUser?.uid) {
+            Toast.makeText(requireContext(), "You can only share your own drawings", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Share Drawing")
+            .setMessage("Do you want to share this drawing with other users?")
+            .setPositiveButton("Share") { _, _ ->
+                viewModel.shareDrawing(drawing)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // Show confirmation dialog for deleting a drawing
     private fun showDeleteConfirmationDialog(drawing: Drawing) {
         AlertDialog.Builder(requireContext())
             .setTitle("Delete Drawing")
@@ -74,8 +135,33 @@ class HomeFragment : Fragment() {
             .show()
     }
 
+    // Show confirmation dialog for logging out
+    private fun showLogoutConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Logout") { _, _ ->
+                auth.signOut()
+                findNavController().navigate(R.id.action_homeFragment_to_loginFragment)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (auth.currentUser == null) {
+            findNavController().navigate(R.id.action_homeFragment_to_loginFragment)
+            return
+        }
         viewModel.loadAllDrawings()
+        viewModel.loadSharedDrawings()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        networkCallback?.let {
+            connectivityManager.unregisterNetworkCallback(it)
+        }
     }
 }

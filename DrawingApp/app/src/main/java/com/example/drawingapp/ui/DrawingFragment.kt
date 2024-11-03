@@ -31,6 +31,7 @@ class DrawingFragment : Fragment() {
     }
 
     private lateinit var drawingView: DrawingView
+    private lateinit var loadingView: View // Loading view
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,7 +44,21 @@ class DrawingFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Initialize loading view
+        loadingView = view.findViewById(R.id.loadingView)
         drawingView = view.findViewById(R.id.drawingView)
+
+        // Observe loading status
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            loadingView.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+
+        // Observe error messages
+        viewModel.errorEvent.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
+            }
+        }
 
         val drawingId = arguments?.getInt("drawingId", -1) ?: -1
         if (drawingId != -1) {
@@ -56,7 +71,7 @@ class DrawingFragment : Fragment() {
             paths?.let { drawingView.loadPaths(it) }
         }
 
-        // Color buttons
+        // Color selection buttons
         view.findViewById<Button>(R.id.buttonBlack).setOnClickListener {
             drawingView.setPaintColor(android.graphics.Color.BLACK)
         }
@@ -67,7 +82,7 @@ class DrawingFragment : Fragment() {
             drawingView.setPaintColor(android.graphics.Color.BLUE)
         }
 
-        // Shape buttons
+        // Shape selection buttons
         view.findViewById<Button>(R.id.buttonRound).setOnClickListener {
             drawingView.setShape(PenShape.ROUND)
         }
@@ -81,7 +96,7 @@ class DrawingFragment : Fragment() {
             drawingView.setBallMode(true)
         }
 
-        // Stroke width
+        // Stroke width adjustment
         val seekBarStrokeWidth = view.findViewById<SeekBar>(R.id.seekBarStrokeWidth)
         seekBarStrokeWidth.progress = 8
         seekBarStrokeWidth.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -99,7 +114,7 @@ class DrawingFragment : Fragment() {
             seekBarStrokeWidth.progress = width.toInt()
         }
 
-        // Opacity
+        // Opacity adjustment
         val seekBarAlpha = view.findViewById<SeekBar>(R.id.seekBarAlpha)
         seekBarAlpha.progress = 255
         seekBarAlpha.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -111,27 +126,41 @@ class DrawingFragment : Fragment() {
             override fun onStopTrackingTouch(seekBar: SeekBar) {}
         })
 
-        // Clear button
+        // Clear canvas button
         view.findViewById<Button>(R.id.buttonClear).setOnClickListener {
             drawingView.clearCanvas()
         }
 
-        // Save button
+        // Save drawing button
         view.findViewById<Button>(R.id.buttonSave).setOnClickListener {
+            if (viewModel.isLoading.value == true) {
+                Toast.makeText(requireContext(), "Please wait...", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             showSaveDialog()
         }
 
-        // Back button
+        // Navigate back button
         view.findViewById<Button>(R.id.buttonBack).setOnClickListener {
             findNavController().navigate(R.id.action_drawingFragment_to_homeFragment)
         }
 
+        // Share drawing button
         view.findViewById<Button>(R.id.buttonShare).setOnClickListener {
+            if (viewModel.isLoading.value == true) {
+                Toast.makeText(requireContext(), "Please wait...", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             shareDrawing()
         }
     }
 
+    // Show a dialog for saving the drawing with a name
     private fun showSaveDialog() {
+        if (viewModel.isLoading.value == true) {
+            return
+        }
+
         val builder = AlertDialog.Builder(requireContext())
         val input = android.widget.EditText(requireContext())
 
@@ -146,24 +175,27 @@ class DrawingFragment : Fragment() {
         builder.setPositiveButton("Save") { dialog, _ ->
             val drawingName = input.text.toString()
             if (drawingName.isNotEmpty()) {
-                val paths = drawingView.getPaths()
-                viewModel.saveDrawing(drawingName, paths)
-                Toast.makeText(
-                    requireContext(),
-                    if (viewModel.currentDrawingName.isNotEmpty()) "Drawing updated" else "New drawing saved",
-                    Toast.LENGTH_SHORT
-                ).show()
-                findNavController().navigate(R.id.action_drawingFragment_to_homeFragment)
+                try {
+                    val paths = drawingView.getPaths()
+                    viewModel.saveDrawing(drawingName, paths)
+                    dialog.dismiss()
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Error saving drawing: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(requireContext(), "Please enter a name", Toast.LENGTH_SHORT).show()
             }
-            dialog.dismiss()
         }
         builder.setNegativeButton("Cancel") { dialog, _ -> dialog.cancel() }
         builder.show()
     }
 
+    // Share the drawing as an image
     private fun shareDrawing() {
+        if (viewModel.isLoading.value == true) {
+            return
+        }
+
         try {
             val bitmap = drawingView.getBitmapFromView()
             val cachePath = File(requireContext().cacheDir, "images")
@@ -189,7 +221,8 @@ class DrawingFragment : Fragment() {
 
             startActivity(Intent.createChooser(shareIntent, "Share your drawing"))
         } catch (e: Exception) {
-            Toast.makeText(context, "Error sharing drawing", Toast.LENGTH_SHORT).show()
+            Log.e("DrawingFragment", "Error sharing drawing: ${e.message}")
+            Toast.makeText(context, "Error sharing drawing: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

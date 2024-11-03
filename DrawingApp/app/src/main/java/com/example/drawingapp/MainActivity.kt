@@ -6,23 +6,18 @@ import androidx.appcompat.widget.Toolbar
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupActionBarWithNavController
-import com.example.drawingapp.data.AppDatabase
-import com.example.drawingapp.data.DrawingRepository
-import com.example.drawingapp.viewmodel.DrawingViewModelFactory
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        const val SERVER_IP = "10.0.2.2" // IP to access localhost from the emulator
+        const val SERVER_PORT = 8080
+    }
+
     private lateinit var navController: NavController
-    private lateinit var repository: DrawingRepository
-    private lateinit var viewModelFactory: DrawingViewModelFactory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        // Initialize Repository and ViewModelFactory
-        val db = AppDatabase.getDatabase(this)
-        repository = DrawingRepository(db.drawingDao())
-        viewModelFactory = DrawingViewModelFactory(repository)
 
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -30,10 +25,18 @@ class MainActivity : AppCompatActivity() {
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
         navController = navHostFragment.navController
-
         setupActionBarWithNavController(navController)
+
+        // Hide the toolbar on specific pages
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            when (destination.id) {
+                R.id.loginFragment -> supportActionBar?.hide()
+                else -> supportActionBar?.show()
+            }
+        }
     }
 
+    // Support navigating up in the navigation hierarchy
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp() || super.onSupportNavigateUp()
     }
