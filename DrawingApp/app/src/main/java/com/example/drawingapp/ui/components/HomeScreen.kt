@@ -17,6 +17,7 @@ import com.example.drawingapp.data.Drawing
 import com.example.drawingapp.base64ToBitmap
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,7 +34,6 @@ fun HomeScreen(
 ) {
     var showSplash by remember { mutableStateOf(true) }
 
-    // Display splash screen for 2 seconds
     LaunchedEffect(key1 = true) {
         delay(2000)
         showSplash = false
@@ -48,14 +48,14 @@ fun HomeScreen(
                     title = { Text("Drawing App") },
                     actions = {
                         IconButton(onClick = onLogoutClick) {
-                            Icon(Icons.Default.ExitToApp, "Logout")
+                            Icon(Icons.Default.ExitToApp, contentDescription = "Logout")
                         }
                     }
                 )
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = onStartDrawingClick) {
-                    Icon(Icons.Default.Add, "New Drawing")
+                    Icon(Icons.Default.Add, contentDescription = "New Drawing")
                 }
             }
         ) { padding ->
@@ -65,6 +65,8 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
+                    val currentUserId = remember { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
+
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -72,7 +74,6 @@ fun HomeScreen(
                             .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Section for user's drawings
                         item {
                             Text("My Drawings", style = MaterialTheme.typography.h5)
                         }
@@ -91,12 +92,12 @@ fun HomeScreen(
                                     onDrawingClick = onDrawingClick,
                                     onDeleteClick = onDeleteClick,
                                     onShareClick = onShareClick,
-                                    isShared = false
+                                    isShared = false,
+                                    currentUserId = currentUserId
                                 )
                             }
                         }
 
-                        // Section for shared drawings
                         item {
                             Spacer(modifier = Modifier.height(24.dp))
                             Text("Shared Drawings", style = MaterialTheme.typography.h5)
@@ -114,15 +115,15 @@ fun HomeScreen(
                                 DrawingListItem(
                                     drawing = drawing,
                                     onDrawingClick = onDrawingClick,
-                                    onDeleteClick = null,
+                                    onDeleteClick = onDeleteClick,
                                     onShareClick = null,
-                                    isShared = true
+                                    isShared = true,
+                                    currentUserId = currentUserId
                                 )
                             }
                         }
                     }
 
-                    // Show loading indicator at the center if data is loading
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier
@@ -142,7 +143,8 @@ private fun DrawingListItem(
     onDrawingClick: (Drawing) -> Unit,
     onDeleteClick: ((Drawing) -> Unit)?,
     onShareClick: ((Drawing) -> Unit)?,
-    isShared: Boolean
+    isShared: Boolean,
+    currentUserId: String
 ) {
     Card(
         modifier = Modifier
@@ -185,18 +187,30 @@ private fun DrawingListItem(
             }
 
             Row {
-                if (!isShared && onShareClick != null) {
-                    IconButton(onClick = { onShareClick(drawing) }) {
-                        Icon(Icons.Default.Share, "Share")
+                if (isShared) {
+                    if (drawing.userId == currentUserId && onDeleteClick != null) {
+                        IconButton(onClick = { onDeleteClick(drawing) }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colors.error
+                            )
+                        }
                     }
-                }
-                if (!isShared && onDeleteClick != null) {
-                    IconButton(onClick = { onDeleteClick(drawing) }) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colors.error
-                        )
+                } else {
+                    if (onShareClick != null) {
+                        IconButton(onClick = { onShareClick(drawing) }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share")
+                        }
+                    }
+                    if (onDeleteClick != null) {
+                        IconButton(onClick = { onDeleteClick(drawing) }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                tint = MaterialTheme.colors.error
+                            )
+                        }
                     }
                 }
             }

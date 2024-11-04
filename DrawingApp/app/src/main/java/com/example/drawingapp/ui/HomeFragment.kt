@@ -27,7 +27,8 @@ import com.google.firebase.auth.FirebaseAuth
 
 class HomeFragment : Fragment() {
     private val viewModel: DrawingViewModel by viewModels {
-        val repository = DrawingRepository(AppDatabase.getDatabase(requireContext()).drawingDao())
+        val repository =
+            DrawingRepository(AppDatabase.getDatabase(requireContext()).drawingDao())
         DrawingViewModelFactory(repository)
     }
     private val auth = FirebaseAuth.getInstance()
@@ -41,7 +42,8 @@ class HomeFragment : Fragment() {
 
     // Setup network callback to monitor connectivity changes
     private fun setupNetworkCallback() {
-        connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        connectivityManager =
+            requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 activity?.runOnUiThread {
@@ -109,7 +111,11 @@ class HomeFragment : Fragment() {
     // Show confirmation dialog for sharing a drawing
     private fun showShareDialog(drawing: Drawing) {
         if (drawing.userId != auth.currentUser?.uid) {
-            Toast.makeText(requireContext(), "You can only share your own drawings", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "You can only share your own drawings",
+                Toast.LENGTH_SHORT
+            ).show()
             return
         }
 
@@ -125,11 +131,37 @@ class HomeFragment : Fragment() {
 
     // Show confirmation dialog for deleting a drawing
     private fun showDeleteConfirmationDialog(drawing: Drawing) {
+        val isShared = drawing.isShared
+        val isOwner = drawing.userId == auth.currentUser?.uid
+
+        val message = when {
+            isShared && isOwner -> "Are you sure you want to delete your shared drawing \"${drawing.name}\"?"
+            isShared && !isOwner -> "You cannot delete someone else's shared drawing."
+            else -> "Are you sure you want to delete \"${drawing.name}\"?"
+        }
+
         AlertDialog.Builder(requireContext())
             .setTitle("Delete Drawing")
-            .setMessage("Are you sure you want to delete \"${drawing.name}\"?")
+            .setMessage(message)
             .setPositiveButton("Delete") { _, _ ->
-                viewModel.deleteDrawing(drawing)
+                when {
+                    isShared && isOwner -> {
+                        // Delete shared drawing
+                        viewModel.deleteSharedDrawing(drawing)
+                    }
+                    isShared && !isOwner -> {
+                        // Cannot delete someone else's drawing
+                        Toast.makeText(
+                            requireContext(),
+                            "You cannot delete someone else's drawing.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                    else -> {
+                        // Delete local drawing
+                        viewModel.deleteDrawing(drawing)
+                    }
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()

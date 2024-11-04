@@ -221,6 +221,23 @@ class DrawingViewModel(private val repository: DrawingRepository) : ViewModel() 
         }
     }
 
+    fun deleteSharedDrawing(drawing: Drawing) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                repository.deleteSharedDrawing(drawing)
+                _errorEvent.value = Event("Shared drawing deleted successfully")
+                loadSharedDrawings()
+            } catch (e: Exception) {
+                Log.e("DrawingViewModel", "Delete shared drawing failed: ${e.message}")
+                _errorEvent.value = Event("Failed to delete shared drawing: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+
     // Approximate path coordinates from a Path object
     private fun approximatePath(path: Path): List<Float> {
         val points = mutableListOf<Float>()

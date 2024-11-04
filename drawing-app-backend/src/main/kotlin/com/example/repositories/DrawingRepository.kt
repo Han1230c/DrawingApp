@@ -127,6 +127,36 @@ class DrawingRepository {
         }
     }
 
+    // Function to delete a drawing by its ID
+    suspend fun delete(id: Int, userId: String): Boolean = dbQuery {
+        try {
+            // Check if the drawing exists
+            val drawing = getById(id) ?: throw NotFoundException("Drawing not found with ID: $id")
+
+            // Check if the current user is the owner
+            if (drawing.userId != userId) {
+                throw SecurityException("You don't have permission to delete this drawing")
+            }
+
+            val deletedRows = Drawings.deleteWhere { Drawings.id eq id }
+
+            if (deletedRows == 0) {
+                throw DatabaseException("Failed to delete drawing: no rows were affected")
+            }
+
+            logger.info("Deleted drawing with id: $id")
+            true
+        } catch (e: Exception) {
+            when (e) {
+                is NotFoundException, is SecurityException -> throw e
+                else -> {
+                    logger.error("Failed to delete drawing", e)
+                    throw DatabaseException("Failed to delete drawing: ${e.message}")
+                }
+            }
+        }
+    }
+
     // Helper function to map a database row to a Drawing object
     private fun toDrawing(row: ResultRow): Drawing =
         Drawing(

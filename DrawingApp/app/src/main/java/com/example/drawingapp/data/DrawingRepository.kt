@@ -110,7 +110,6 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
             if (!pendingUploads.contains(drawing.id)) {
                 try {
                     ApiService.deleteDrawing(drawing.id)
-                    // 只记录一次成功日志
                     Log.d(TAG, "Successfully deleted drawing ${drawing.id}")
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to delete drawing from server: ${e.message}")
@@ -119,6 +118,24 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete drawing: ${e.message}")
             throw Exception("Failed to delete drawing: ${e.message}")
+        }
+    }
+
+    suspend fun deleteSharedDrawing(drawing: Drawing) {
+        try {
+            if (drawing.userId != getCurrentUserId()) {
+                throw SecurityException("You can only delete your own shared drawings.")
+            }
+
+            ApiService.deleteDrawing(drawing.id)
+            Log.d(TAG, "Successfully deleted shared drawing ${drawing.id}")
+
+            withContext(Dispatchers.IO) {
+                drawingDao.deleteDrawing(drawing)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete shared drawing: ${e.message}")
+            throw e
         }
     }
 
@@ -249,7 +266,6 @@ class DrawingRepository(private val drawingDao: DrawingDao) {
                 retry(maxAttempts = 3) {
                     try {
                         ApiService.shareDrawing(serverDrawing.id)
-                        // 只在最终成功时记录一次日志
                         Log.d(TAG, "Successfully shared drawing ${serverDrawing.id}")
                     } catch (e: Exception) {
                         Log.e(TAG, "Failed to share drawing on server: ${e.message}")

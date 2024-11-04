@@ -1,5 +1,6 @@
 package com.example.routes
 
+import com.example.exceptions.DatabaseException
 import com.example.exceptions.ValidationException
 import com.example.exceptions.SecurityException
 import com.example.exceptions.NotFoundException
@@ -101,6 +102,27 @@ fun Route.drawingRoutes() {
                 call.respond(updatedDrawing)
             } catch (e: Exception) {
                 logger.error("Error sharing drawing", e)
+                throw e
+            }
+        }
+
+        delete("/{id}") {
+            try {
+                val id = call.parameters["id"]?.toIntOrNull()
+                    ?: throw ValidationException("Invalid drawing ID format")
+
+                val userId = call.request.headers["Authorization"]?.substringAfter("Bearer ")
+                    ?: throw SecurityException("Missing authorization token")
+
+                val success = repository.delete(id, userId)
+
+                if (success) {
+                    call.respond(HttpStatusCode.OK, mapOf("message" to "Drawing deleted successfully"))
+                } else {
+                    throw DatabaseException("Failed to delete drawing")
+                }
+            } catch (e: Exception) {
+                logger.error("Error deleting drawing", e)
                 throw e
             }
         }
